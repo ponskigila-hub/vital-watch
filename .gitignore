@@ -24,3 +24,16 @@ models/*.joblib
 .vscode/
 .DS_Store
 Thumbs.db
+
+# Frontend
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Backend runtime, credentials, and test artifacts
+api/runtime/
+api/.demo-credentials.json
+.pytest_cache/
+*.db
+*.db-wal
+*.db-shm

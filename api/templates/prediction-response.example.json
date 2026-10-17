@@ -1,0 +1,23 @@
+{
+  "schema_version": "1",
+  "patient_id": "p000001",
+  "as_of_hour": 10,
+  "status": "unavailable",
+  "sepsis": {
+    "status": "unavailable",
+    "score": null,
+    "band": null,
+    "alert": null,
+    "factors": []
+  },
+  "baseline": {
+    "status": "unavailable",
+    "deviations": {}
+  },
+  "data_quality": {
+    "history_rows": 1
+  },
+  "model_version": null,
+  "feature_version": null,
+  "origin": "disconnected"
+}

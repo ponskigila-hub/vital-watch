@@ -1,0 +1,84 @@
+{
+  "$defs": {
+    "ObservationReference": {
+      "additionalProperties": false,
+      "properties": {
+        "measurement": {
+          "title": "Measurement",
+          "type": "string"
+        },
+        "hour": {
+          "title": "Hour",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "measurement",
+        "hour"
+      ],
+      "title": "ObservationReference",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "status": {
+      "enum": [
+        "disconnected",
+        "example",
+        "ok",
+        "unavailable"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "text": {
+      "title": "Text",
+      "type": "string"
+    },
+    "citations": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Citations",
+      "type": "array"
+    },
+    "observation_references": {
+      "items": {
+        "$ref": "#/$defs/ObservationReference"
+      },
+      "title": "Observation References",
+      "type": "array"
+    },
+    "limitations": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Limitations",
+      "type": "array"
+    },
+    "proposed_focus": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Proposed Focus"
+    },
+    "requires_clinician_confirmation": {
+      "default": true,
+      "title": "Requires Clinician Confirmation",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "status",
+    "text"
+  ],
+  "title": "LanguageResult",
+  "type": "object"
+}

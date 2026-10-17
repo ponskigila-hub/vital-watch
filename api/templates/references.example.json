@@ -1,0 +1,12 @@
+{
+  "status": "not_configured",
+  "references": [],
+  "passage_schema_example": {
+    "id": "replace-with-reviewed-source-id",
+    "title": "Reviewed medical source title",
+    "url": "https://example.org/replace-with-real-source",
+    "passage": "Add a permitted passage and verify its clinical applicability before enabling retrieval.",
+    "provenance": "Record publisher, retrieval date, permission/license and reviewer.",
+    "reviewed": false
+  }
+}
