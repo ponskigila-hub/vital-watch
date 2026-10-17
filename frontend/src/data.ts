@@ -9,12 +9,12 @@ export type Patient = {
 export type CareEvent = { id: string; patientId: string; hour: number; kind: string; text: string; created: string; session: number; alertId?: string; alertStatus?: AlertState['status'] }
 export type AlertState = { status: 'Open' | 'Acknowledged' | 'In progress' | 'Resolved'; note: string }
 export const VITALS: { key: VitalKey; label: string; short: string; unit: string; color: string }[] = [
-  { key: 'HR', label: 'Heart rate', short: 'Heart rate', unit: 'bpm', color: '#ba6759' },
-  { key: 'O2Sat', label: 'Oxygen saturation', short: 'SpO₂', unit: '%', color: '#4e85a4' },
-  { key: 'SBP', label: 'Systolic pressure', short: 'Systolic BP', unit: 'mmHg', color: '#9a7cba' },
-  { key: 'MAP', label: 'Mean arterial pressure', short: 'MAP', unit: 'mmHg', color: '#8a7954' },
-  { key: 'Resp', label: 'Respiratory rate', short: 'Respiratory rate', unit: '/min', color: '#618b77' },
-  { key: 'Temp', label: 'Temperature', short: 'Temperature', unit: '°C', color: '#b58b4e' },
+  { key: 'HR', label: 'Heart rate', short: 'Heart rate', unit: 'bpm', color: '#b54739' },
+  { key: 'O2Sat', label: 'Oxygen saturation', short: 'SpO₂', unit: '%', color: '#176f9a' },
+  { key: 'SBP', label: 'Systolic pressure', short: 'Systolic BP', unit: 'mmHg', color: '#735099' },
+  { key: 'MAP', label: 'Mean arterial pressure', short: 'MAP', unit: 'mmHg', color: '#866022' },
+  { key: 'Resp', label: 'Respiratory rate', short: 'Respiratory rate', unit: '/min', color: '#237553' },
+  { key: 'Temp', label: 'Temperature', short: 'Temperature', unit: '°C', color: '#a66513' },
 ]
 
 export const ADDITIONAL_VITALS = [

@@ -90,3 +90,115 @@ body{font-size:16px}.sidebar{width:250px;padding-left:16px;padding-right:16px}.m
 @media(max-width:1000px){.history-metric-grid{grid-template-columns:1fr}.history-metric-card:nth-child(odd){border-right:0}.history-panel-heading{flex-wrap:wrap}.history-range-label{min-width:200px}.metric-comparison>div>small{font-size:16px}.metric-comparison>div>strong>small{font-size:16px}}
 @media(max-width:700px){.history-panel-heading{padding:22px;gap:17px}.history-view-toolbar{padding:0 22px 22px}.history-metric-card .trend-chart{height:220px}.history-metric-grid.is-focused .trend-chart{height:260px}.metric-chart-heading{padding:0 22px;flex-wrap:wrap}.metric-current{padding:19px 22px 8px}.metric-coverage{padding:17px 22px}.metric-comparison{padding:18px 22px;gap:12px}.metric-comparison>div>span{font-size:16px}.metric-comparison>div>strong{font-size:24px}.metric-comparison>div>strong>small{display:block;margin:6px 0;white-space:normal}.raw-history{margin:22px}.history-panel>.chart-note{padding:0 22px 22px}.additional-vitals{grid-template-columns:1fr;margin:0 22px}.additional-vital:first-child{border-right:0;border-bottom:1px solid #e4eadc}.lab-history-content{padding:22px}.lab-history-content>.metric-comparison{margin-left:-22px;margin-right:-22px}.focused-vital-select{padding:0 22px 22px}.history-view-tabs button{font-size:16px}.lab-result-list>div{width:100%}}
 @media(max-width:420px){.metric-comparison{grid-template-columns:1fr}.metric-comparison>div{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;border-bottom:1px solid #e4eadb;padding-bottom:13px}.metric-comparison>div:last-child{border-bottom:0;padding-bottom:0}.metric-comparison>div>strong{margin:0;text-align:right}.metric-comparison>div>strong>small{display:inline;margin-left:5px}.metric-comparison>div>small{grid-column:1/-1}.history-view-tabs button{padding:9px}.history-range-label{width:100%}}
+
+/* Strong clinical hierarchy: priority colour belongs to labelled priorities,
+   not to unassessed vital readings or the direction of an observed change. */
+:root{--ink-strong:#172c24;--ink-secondary:#4f6258;--priority-high:#a12620;--priority-watch:#805000;--priority-low:#22603c;color:var(--ink-strong)}
+h1,h2,.patient-identity h1,.family-intro h2{color:var(--ink-strong)}
+.panel-title h3,.history-panel-heading h3,.metric-chart-heading h4,.padded h3,.sheet-head h2,.additional-vital h4{color:#203d2e;font-weight:600}
+.stat-main,.vital-card>strong,.history-value,.metric-current>strong,.lab-grid strong,.lab-result-list strong,.evidence-list>div>strong,.reading-value,.patient-table td>strong,.raw-history td,.metric-comparison>div>strong{color:#142c23;font-weight:600;font-variant-numeric:tabular-nums}
+.stat-label{color:#344f41;font-weight:600}
+.stat-label>svg{color:#587565;stroke-width:1.7}
+.stat-card{border-color:#dce4dd}
+.review-stat{border-top:4px solid #b33128;background:#fffaf9;padding-top:19px}
+.review-stat .stat-main{color:var(--priority-high)}
+.review-stat .stat-label,.review-stat .stat-label>svg{color:#8c3029}
+.alert-stat{border-top:4px solid #ad7415;background:#fffdf7;padding-top:19px}
+.alert-stat .stat-main{color:#805000}
+.stat-tag{background:#e8f3e8;color:#2e663a;border:1px solid #bfd6bf;font-weight:500}
+.stat-tag.orange{background:#ffe7e3;color:#9a251e;border:1px solid #e5aaa3;font-weight:600}
+.badge{font-weight:600;border-width:1px;gap:7px}
+.badge i{width:6px;height:6px}
+.badge.high{color:var(--priority-high);background:#ffebe8;border-color:#dfa49d}
+.badge.moderate{color:var(--priority-watch);background:#fff2cc;border-color:#d8b773}
+.badge.low{color:var(--priority-low);background:#e8f4eb;border-color:#afcfb9}
+.patient-table tbody tr:has(.badge.high){background:#fffaf9}
+.patient-table tbody tr:has(.badge.high):hover{background:#fff1ee}
+.patient-table tr:has(.badge.high) td:first-child{box-shadow:inset 4px 0 #b33128}
+.patient-table tr:has(.badge.moderate) td:first-child{box-shadow:inset 3px 0 #bb862c}
+.patient-link strong{color:#1b3428;font-weight:600}
+.manual-priority{font-weight:600;color:#274e38}
+.manual-priority.urgent{color:var(--priority-high)}
+.manual-priority.soon{color:var(--priority-watch)}
+.manual-priority.routine{color:var(--priority-low)}
+.manual-priority small{color:#53665a;font-weight:400}
+.patient-table th{color:#42594b;font-weight:500;background:#f2f6ef}
+.vital-card{border-color:#d9e2d8}
+.vital-card>div{color:#354f3d;font-weight:500}
+.vital-card.selected{border-color:#396c4b;box-shadow:inset 0 3px 0 #396c4b,0 0 0 1px #396c4b33;background:#f7faf5}
+.vital-dot{width:7px;height:7px;opacity:1}
+.unit,.vital-card>strong>small,.history-value small,.metric-current>strong>small,.evidence-list>div>strong>small{color:#506356;font-weight:400}
+.stale{color:#805000!important;background:#fff2d4;border-radius:4px;padding:3px 5px;width:fit-content;font-weight:500}
+.alert-item{border-bottom-color:#dce4da}
+.alert-item.high{border-left:4px solid #b33128;padding-left:15px}
+.alert-item.moderate{border-left:4px solid #ad7415;padding-left:15px}
+.alert-item.high .alert-symbol{background:#ffe6e2;color:#a12620}
+.alert-item.moderate .alert-symbol{background:#fff0c6;color:#805000}
+.alert-item .alert-title strong{color:#283e2e;font-weight:600}
+.alert-item.high .alert-title strong{color:#9a251e}
+.alert-item.moderate .alert-title strong{color:#805000}
+.alert-content>p,.alerts-list .alert-content>p{color:#4f6258}
+.alert-title>span,.patient-alert-link>span,.tiny-label{color:#596951}
+.patient-alert-link{color:#274f37;font-weight:500}
+.risk-score.high{color:var(--priority-high);font-weight:600}
+.risk-score.moderate{color:var(--priority-watch);font-weight:600}
+.risk-score.low{color:var(--priority-low);font-weight:600}
+.risk-score>small{color:#536458;font-weight:500}
+.example-pill{background:#eaf0f6;color:#314f6b;border-color:#bdccda;font-weight:600}
+.review-panel>.panel-title{background:#f8faf6;border-bottom:1px solid #e4eadd;margin-bottom:18px}
+.metric-comparison{background:#f1f6ef;border-top-color:#d9e4d2}
+.metric-comparison>div>span{color:#3b5641;font-weight:500}
+.metric-comparison>div>strong>small,.metric-comparison>div>small{color:#52674d}
+.metric-comparison>div:last-child>strong{color:#245a7d}
+.metric-chart-heading .legend-dot{width:8px;height:8px}
+.metric-coverage,.metric-current>span,.history-panel-heading p,.history-panel>.chart-note,.no-observation,.additional-vital p{color:#53664f}
+.raw-history th{color:#294b32;background:#eaf2e4}
+.raw-history caption,.raw-history th small{color:#52684a}
+.raw-history>summary{color:#305639;font-weight:500;background:#f0f6ea}
+.raw-history>summary>span{color:#567049;font-weight:400}
+.lab-result-list>div{color:#52674d;background:#f9fbf6;border-color:#d7e2ce}
+.focus-bar{background:#eaf2e4;border-color:#c5d5b7;border-left:4px solid #3f6b42}
+.focus-bar strong{color:#294f31;font-weight:600}
+.focus-bar small,.focus-confirmed{color:#506b47}
+.focus-symbol{color:#396a3c}
+.notice,.small-notice,.sheet-body>.notice{background:#edf3f8;border-color:#bfd0de;color:#36566d}
+.info-strip,.neutral-chip{color:#465f4c}
+.neutral-chip{background:#f0f5eb;border-color:#c9d8bc}
+.connection-dot{background:#78867a}
+.connection-dot.connected,.live-dot{background:#447b45}
+.example-dot{background:#97651e}
+.connection-row strong,.setting-row strong{color:#294a33;font-weight:500}
+.connection-row small,.setting-row p{color:#53684e}
+.stat-foot,.stat-micro,.panel-title p,.panel-caption,.patient-link small,.table-footer,.vital-card>small,.review-panel>p,.padded>p,.page-heading p,.patient-identity p,.family-intro p,.chart-note,.muted,.small-text{color:#53664f}
+.nav-item{color:#52634f}
+.nav-item.active{background:#e0ecd7;color:#254d2f;font-weight:600}
+.nav-item.active svg,.nav-active-dot{color:#315e36}
+.nav-group-label,.workspace-selector small,.workspace-selector strong,.breadcrumb,.breadcrumb strong,.user-button strong,.user-button small,.eyebrow{color:#4f6548}
+.text-link{color:#315f3b;font-weight:500}
+.button.secondary{color:#315638;border-color:#aebfa2}
+.button.dark{background:#204b34;border-color:#204b34;color:white}
+.filter-tabs>button{color:#52664a}
+.filter-tabs>button.active{background:#e4efd9;border-color:#aec69b;color:#2c5631;font-weight:600}
+.history-view-tabs button{color:#536b49}
+.history-view-tabs button.active{color:#234b2b;background:#fff;font-weight:600;box-shadow:0 1px 4px #233b1b26}
+.patient-tabs button{color:#52664a}
+.patient-tabs button.active{color:#275132;font-weight:600;border-color:#315e36}
+.history-range-label,.focused-vital-select,.lab-history-selector,.field-label,.sheet-body .field-label{color:#3f5a3d;font-weight:500}
+.text-input,.text-area,.sheet-body .text-input,.sheet-body .text-area,.handover-editor,.chat-composer>textarea{color:#263f2d;border-color:#b6c7a9;background:#fcfdf9}
+.text-input::placeholder,.text-area::placeholder,.search-box input::placeholder,.chat-composer>textarea::placeholder{color:#697963}
+.sheet-body>p,.chat-welcome p,.chat-message>p,.empty p,.timeline-item p,.note-item p,.approved-update>p{color:#50644a}
+.sheet-body>h3,.sheet-body>h4,.chat-welcome h3,.empty h3,.timeline-item h4{color:#294e31}
+.chat-message>span,.approved-update>span,.timeline-item small,.note-item small,.form-context,.chat-composer>small{color:#526d46}
+.prompt-list>button{color:#365c36;border-color:#c2d2b5}
+.chat-connection,.chat-connection>span:last-child{color:#53664f}
+.send-button{background:#315f3b}
+.handover-callout{background:#e2edd6;border-color:#c9d9ba}
+.handover-callout h2{color:#2d4e29;font-weight:500}
+.handover-callout p,.callout-bottom,.callout-top .eyebrow,.callout-icon{color:#4d6741}
+.sidebar-note strong{color:#365231}
+.sidebar-note p,.sidebar-note .text-link,.sidebar-version,.sidebar-version>span:last-child,.workspace-footer{color:#5a6f50}
+.replay-label strong,.replay-label>span:last-child,.replay-hour,.replay-hour strong,.replay-hour>span,.replay-mode{color:#365b3b}
+.replay-controls .play-button{background:#e1eed6;border-color:#a9c495;color:#2c5a32}
+.replay-controls input[type=range]{accent-color:#3e7042}
+.replay-mode .example-dot{width:7px;height:7px}
+.toast{color:#294f32;border-color:#a9c298}
