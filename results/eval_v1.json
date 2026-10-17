@@ -1,0 +1,123 @@
+{
+  "model_version": "v1",
+  "feature_version": "v1",
+  "best_iteration": 111,
+  "thresholds_from_val": {
+    "5pct_false_alert_patients": 0.09369306785703713,
+    "10pct_false_alert_patients": 0.07189758650592362,
+    "20pct_false_alert_patients": 0.047769705085315244
+  },
+  "splits": {
+    "val": {
+      "rows": 117616,
+      "positive_row_rate": 0.021799755135355734,
+      "AUROC": 0.8177403930979754,
+      "AUPRC": 0.13334867670223075,
+      "operating_points": {
+        "5pct_false_alert_patients": {
+          "threshold": 0.09369306785703713,
+          "sepsis_patients_detected_by_onset": 0.4552238805970149,
+          "median_lead_hours_before_onset": 32.5,
+          "nonsepsis_patients_with_alert": 0.05030542579949695,
+          "alert_episodes_per_100_patient_days_nonsepsis": 4.735346115902675
+        },
+        "10pct_false_alert_patients": {
+          "threshold": 0.07189758650592362,
+          "sepsis_patients_detected_by_onset": 0.5111940298507462,
+          "median_lead_hours_before_onset": 35.0,
+          "nonsepsis_patients_with_alert": 0.10025152712899749,
+          "alert_episodes_per_100_patient_days_nonsepsis": 10.431826839488565
+        },
+        "20pct_false_alert_patients": {
+          "threshold": 0.047769705085315244,
+          "sepsis_patients_detected_by_onset": 0.6343283582089553,
+          "median_lead_hours_before_onset": 36.0,
+          "nonsepsis_patients_with_alert": 0.20014372978799858,
+          "alert_episodes_per_100_patient_days_nonsepsis": 24.825403647232342
+        }
+      },
+      "baseline_LR_AUROC": 0.7520228186313421
+    },
+    "test": {
+      "rows": 118903,
+      "positive_row_rate": 0.02167312851652187,
+      "AUROC": 0.8223371699878863,
+      "AUPRC": 0.13494962066831756,
+      "operating_points": {
+        "5pct_false_alert_patients": {
+          "threshold": 0.09369306785703713,
+          "sepsis_patients_detected_by_onset": 0.46096654275092935,
+          "median_lead_hours_before_onset": 34.0,
+          "nonsepsis_patients_with_alert": 0.04852624011502516,
+          "alert_episodes_per_100_patient_days_nonsepsis": 5.016478548721089
+        },
+        "10pct_false_alert_patients": {
+          "threshold": 0.07189758650592362,
+          "sepsis_patients_detected_by_onset": 0.5390334572490706,
+          "median_lead_hours_before_onset": 32.0,
+          "nonsepsis_patients_with_alert": 0.0905823148813803,
+          "alert_episodes_per_100_patient_days_nonsepsis": 9.566307930119287
+        },
+        "20pct_false_alert_patients": {
+          "threshold": 0.047769705085315244,
+          "sepsis_patients_detected_by_onset": 0.6877323420074349,
+          "median_lead_hours_before_onset": 36.0,
+          "nonsepsis_patients_with_alert": 0.18296189791516895,
+          "alert_episodes_per_100_patient_days_nonsepsis": 20.62589319567183
+        }
+      },
+      "baseline_LR_AUROC": 0.7686579720483795
+    },
+    "b_check": {
+      "rows": 761995,
+      "positive_row_rate": 0.014147074455869133,
+      "AUROC": 0.7993183425658101,
+      "AUPRC": 0.07601061384295493,
+      "operating_points": {
+        "5pct_false_alert_patients": {
+          "threshold": 0.09369306785703713,
+          "sepsis_patients_detected_by_onset": 0.34413309982486867,
+          "median_lead_hours_before_onset": 40.0,
+          "nonsepsis_patients_with_alert": 0.02338530066815145,
+          "alert_episodes_per_100_patient_days_nonsepsis": 3.9738017044153833
+        },
+        "10pct_false_alert_patients": {
+          "threshold": 0.07189758650592362,
+          "sepsis_patients_detected_by_onset": 0.3966725043782837,
+          "median_lead_hours_before_onset": 40.0,
+          "nonsepsis_patients_with_alert": 0.045444904019514266,
+          "alert_episodes_per_100_patient_days_nonsepsis": 5.819027887161308
+        },
+        "20pct_false_alert_patients": {
+          "threshold": 0.047769705085315244,
+          "sepsis_patients_detected_by_onset": 0.5061295971978984,
+          "median_lead_hours_before_onset": 35.5,
+          "nonsepsis_patients_with_alert": 0.10865415208399619,
+          "alert_episodes_per_100_patient_days_nonsepsis": 11.012613940845066
+        }
+      }
+    }
+  },
+  "top_features_by_gain": {
+    "ICULOS": 84766.31414413452,
+    "FiO2_age": 13660.326274871826,
+    "HospAdmTime": 10547.51120376587,
+    "Temp_last": 8118.5651206970215,
+    "Resp_mean24": 7510.961206436157,
+    "Lactate_age": 6308.8524169921875,
+    "WBC_last": 6042.123104095459,
+    "BUN_last": 5921.562496185303,
+    "Resp_min24": 5889.800575256348,
+    "PTT_last": 5762.914083480835,
+    "SBP_max24": 5461.338691711426,
+    "shock_index": 5247.240074157715,
+    "Calcium_last": 4773.21000289917,
+    "Creatinine_last": 4746.25231552124,
+    "Temp_max24": 4518.894023895264,
+    "Platelets_last": 4509.656995773315,
+    "Age": 4501.377895355225,
+    "MAP_min24": 3863.73618888855,
+    "Temp_n24": 3829.534210205078,
+    "Phosphate_last": 3763.117811203003
+  }
+}
