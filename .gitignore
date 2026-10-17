@@ -24,3 +24,15 @@ models/*.joblib
 .vscode/
 .DS_Store
 Thumbs.db
+
+# Frontend
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Keep the single public demo recording; training data stays ignored.
+!frontend/public/data/
+frontend/public/data/*
+!frontend/public/data/p000001.psv
+!frontend/public/data/README.md
+!frontend/public/data/PHYSIONET_LICENSE.txt
