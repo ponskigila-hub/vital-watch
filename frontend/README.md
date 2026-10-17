@@ -1,6 +1,12 @@
 # VitalWatch frontend
 
-React, TypeScript, Vite, Recharts, Lucide, and GSAP clinical workspace with locally bundled Geist fonts. This frontend connects to the authenticated FastAPI backend; follow the [repository setup guide](../README.md) to start both services and obtain the generated demo sign-in details.
+React, TypeScript, Vite, Recharts, Feather icons, and GSAP clinical workspace. This frontend connects to the authenticated FastAPI backend; follow the [repository setup guide](../README.md) to start both services and obtain the generated demo sign-in details.
+
+The interface follows the supplied [MediCare+ design guide](design/medicare-DESIGN.md). Its implementation is in `src/medicare.css`, imported after the existing layout styles. Fonts are bundled locally: Figtree headings, Open Sans body text, and IBM Plex Mono for recorded values and IDs. The theme uses medical blue navigation/actions, white surfaces, labelled red/amber clinical statuses, visible focus rings, and at least 44px primary control targets. Body text retains the larger sizes requested for this workspace. This styling is not a claim of a completed WCAG audit.
+
+`src/presentation.css` provides the final shared typography, corner-radius, and shadow tokens. All stylesheets use the same six text sizes: 32px page titles, 24px section headings, 20px subheadings, 16px body text, 14px supporting text, and 40px primary readings. The reference-inspired surface polish uses 24px outer corners, 16px inset corners, rounded controls, and soft shadows without changing page grids or component arrangement.
+
+`src/motion.css` adds hover/press feedback, smooth state colors, toast entry, and disclosure transitions. GSAP handles page/drawer entrances and staggered statistic cards. `src/useInteractionMotion.ts` adds a short spring release when a button is activated by mouse, touch, or keyboard. Animations respect reduced-motion preferences, including preference changes while the app is open; readings and chart traces do not animate between updates.
 
 ```sh
 npm install
@@ -10,10 +16,15 @@ npm run build
 
 Vite proxies `/api` to `http://127.0.0.1:8000`. For a production preview, build this frontend and run the backend, which serves the build and API together. Vite's standalone preview command does not provide the backend proxy.
 
-The clinical workspace includes patient search, all six primary vital histories, DBP/EtCO2 and 26 additional measurement fields, missing-data states, shared replay, notes, manual monitoring focus and review priority, example alerts, structured handovers, approved family updates, and PSV import. Care records and imports persist on the server. Editable handover changes must be saved explicitly.
+The clinical workspace includes patient search, all six primary vital histories, DBP/EtCO2 and 26 additional measurement fields, missing-data states, shared replay, notes, manual monitoring focus and review priority, model-generated alerts, structured handovers, approved family updates, and PSV import. Care records and imports persist on the server. Editable handover changes must be saved explicitly.
 
 Family accounts have a separate, server-authorized view containing only assigned patients' heart rate, oxygen saturation, systolic pressure, observation hours, and approved updates. Clinical-only controls and records are excluded from their API responses.
 
-The sepsis predictor, baseline detector, and Gemini are disconnected. Example scores, alerts, and conversations are visibly labelled. See the [integration templates](../api/INTEGRATIONS.md) for the future provider contracts. No API key is required for the current app, and no patient content is sent to a model service.
+The LightGBM sepsis predictor is connected through the backend. Scores, threshold bands, SHAP contributions, and score history come from saved model results; the replay clock calculates new results and crossing alerts automatically. The baseline detector remains disconnected. Gemini guidance, chat and editable AI handovers are available after backend configuration; template handovers remain available without a key. Explicit fixture mode and conversations are visibly labelled. See the [integration guide](../api/INTEGRATIONS.md). No API key is required for sepsis inference, which runs locally on the backend CPU. Gemini uses a separate backend-only key.
 
-The PhysioNet sample and its attribution are private backend assets under `api/demo/`. All demo identities and clinical profiles are fictional; the remaining five seeded streams are synthetic. Source labels distinguish recorded and synthetic readings. The clinical parser excludes outcome labels, and history is limited to the shared replay hour.
+The PhysioNet sample and its attribution are private backend assets under `api/demo/`. All demo identities and clinical profiles are fictional; seven additional held-out recordings are seeded automatically, and five streams remain synthetic. The held-out evaluation manifest stays outside clinical context. Source labels distinguish recorded and synthetic readings. The clinical parser excludes outcome labels, and history is limited to the shared replay hour.
+
+
+## Educational Gemini features
+
+The sepsis panel includes a separate suggested-review-steps component. It polls durable generation state, preserves earlier successful guidance, displays supplied evidence/reference provenance, and supports explicit planned/completed actions. Chat and handover use the same backend snapshots. The frontend never receives an API key or calls Google directly. Free-text questions require fictional/demo-content confirmation; notes are excluded unless similarly confirmed. Template handovers remain available when Gemini is off. See the root README and api/INTEGRATIONS.md for setup and limitations.

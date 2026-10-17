@@ -1,0 +1,42 @@
+.blood-pressure-card { grid-column:1 / -1; min-width:0; }
+.chart-unit { color:#475569; font-size:var(--font-body); }
+.pressure-values { display:flex; flex-wrap:wrap; gap:24px 56px; margin:20px 0 8px; padding:0 32px; }
+.pressure-values > div { display:grid; gap:5px; min-width:100px; }
+.pressure-values span { display:flex; align-items:center; gap:8px; font-size:var(--font-body); font-weight:600; color:#475569; }
+.pressure-values i { width:22px; border-top:3px solid; }
+.pressure-values strong { font-size:var(--font-metric); font-weight:700; line-height:1.2; color:#0f172a; font-variant-numeric:tabular-nums; }
+.pressure-values small { font-size:var(--font-caption); color:#475569; }
+.pressure-chart { width:100%; height:250px; min-width:0; }
+.measurement-availability { padding:28px 32px; border-top:1px solid #e2e8f0; margin-top:24px; min-width:0; }
+.availability-heading { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; }
+.availability-heading h4 { margin:0; font-size:var(--font-subhead); font-weight:700; color:#0f172a; }
+.availability-legend { display:flex; flex-wrap:wrap; align-items:center; gap:12px 24px; margin:18px 0 12px; font-size:var(--font-caption); color:#475569; }
+.availability-legend span { display:flex; align-items:center; gap:8px; }
+.availability-legend i { width:14px; height:14px; border-radius:3px; background:#eef2f6; border:1px solid #cbd5e1; }
+.availability-legend .recorded { background:#0077b6; border-color:#0077b6; }
+.availability-scroll { max-width:100%; max-height:460px; overflow:auto; overscroll-behavior:contain; border-radius:var(--radius-inset); border:1px solid #e2e8f0; }
+.availability-table { width:100%; border-collapse:separate; border-spacing:3px; table-layout:auto; margin:0; }
+.availability-table th, .availability-table td { border:0; padding:0; text-align:center; height:30px; }
+.availability-table th { font-size:var(--font-caption); font-weight:600; color:#475569; background:white; }
+.availability-table th:first-child { position:sticky; left:0; z-index:1; min-width:150px; max-width:170px; padding:6px 10px; text-align:left; }
+.availability-table thead th { position:sticky; top:0; z-index:2; min-width:28px; height:34px; }
+.availability-table thead th:first-child { z-index:3; }
+.availability-cell { display:block; width:100%; min-width:28px; height:26px; padding:0; background:repeating-linear-gradient(135deg,#f1f5f9 0px,#f1f5f9 4px,#e8edf3 4px,#e8edf3 5px); border:1px solid #dbe3ed; border-radius:4px; cursor:pointer; box-shadow:none; }
+.availability-cell.is-recorded { background:#0077b6; border-color:#0077b6; }
+.availability-cell[aria-pressed=true], .availability-cell:focus-visible { outline:2px solid #0f172a; outline-offset:1px; }
+.availability-cell:hover { filter:brightness(.88); }
+.availability-selection { display:flex; justify-content:space-between; flex-wrap:wrap; align-items:center; gap:8px; margin-top:16px; padding:14px 18px; background:#f4f8fc; border-radius:var(--radius-control); font-size:var(--font-body); color:#475569; }
+.availability-selection strong { color:#0f172a; font-size:var(--font-subhead); font-weight:700; }
+.availability-selection small { font-size:var(--font-caption); font-weight:400; }
+.sr-alert-key { width:12px!important; height:12px!important; border-radius:50%!important; background:#b91c1c!important; border:2px solid white; outline:1px solid #b91c1c; }
+.score-alert-events { display:flex; flex-wrap:wrap; gap:8px; margin:12px 0; }
+.score-alert-events button { display:flex; align-items:center; gap:8px; color:#9f1919; background:#fff4f4; border:1px solid #f2cccc; padding:8px 12px; border-radius:var(--radius-control); font-size:var(--font-caption); cursor:pointer; }
+.score-alert-events button span { color:#475569; }
+@media (max-width:600px) {
+  .pressure-values { gap:20px; justify-content:space-between; padding:0 22px; }
+  .pressure-values > div { min-width:70px; }
+  .pressure-values strong { font-size:32px; }
+  .pressure-chart { height:220px; }
+  .availability-table th:first-child { min-width:120px; }
+  .measurement-availability { padding:24px 22px; }
+}

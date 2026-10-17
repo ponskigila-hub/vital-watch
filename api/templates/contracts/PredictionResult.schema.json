@@ -151,6 +151,32 @@
           "default": null,
           "title": "Alert"
         },
+        "alert_threshold": {
+          "anyOf": [
+            {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Alert Threshold"
+        },
+        "alert_policy": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Alert Policy"
+        },
         "factors": {
           "items": {
             "$ref": "#/$defs/Factor"
@@ -233,6 +259,13 @@
       ],
       "title": "Origin",
       "type": "string"
+    },
+    "limitations": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Limitations",
+      "type": "array"
     }
   },
   "required": [

@@ -47,6 +47,8 @@ class Patient(Base):
     color: Mapped[str] = mapped_column(String, default="sage")
     source: Mapped[str] = mapped_column(String)
     provenance: Mapped[str] = mapped_column(Text)
+    ai_demo_approved: Mapped[bool] = mapped_column(Boolean, default=False)
+    ai_context_approved: Mapped[bool] = mapped_column(Boolean, default=False)
     source_hash: Mapped[str | None] = mapped_column(String, unique=True, nullable=True)
     focus: Mapped[str] = mapped_column(String, default="General monitoring")
     conditions: Mapped[list] = mapped_column(JSON, default=list)
@@ -117,6 +119,8 @@ class Handover(Base):
     actor_id: Mapped[str] = mapped_column(ForeignKey("users.id"))
     hour: Mapped[int] = mapped_column(Integer)
     text: Mapped[str] = mapped_column(Text)
+    origin: Mapped[str] = mapped_column(String, default="structured_template")
+    generation_id: Mapped[str | None] = mapped_column(String, nullable=True)
     revision: Mapped[int] = mapped_column(Integer, default=1)
     created: Mapped[float] = mapped_column(Float, default=time.time)
 
@@ -143,4 +147,51 @@ class Message(Base):
     role: Mapped[str] = mapped_column(String)
     text: Mapped[str] = mapped_column(Text)
     origin: Mapped[str] = mapped_column(String, default="disconnected")
+    data: Mapped[dict] = mapped_column(JSON, default=dict)
     created: Mapped[float] = mapped_column(Float, default=time.time)
+
+
+class PredictionRun(Base):
+    __tablename__ = "prediction_runs"
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=identifier)
+    replay_id: Mapped[str] = mapped_column(ForeignKey("replays.id"))
+    patient_id: Mapped[str] = mapped_column(ForeignKey("patients.id"))
+    hour: Mapped[int] = mapped_column(Integer)
+    model_key: Mapped[str] = mapped_column(String)
+    result: Mapped[dict] = mapped_column(JSON)
+    created: Mapped[float] = mapped_column(Float, default=time.time)
+    __table_args__ = (UniqueConstraint("replay_id", "patient_id", "hour", "model_key"), Index("prediction_replay_patient_hour", "replay_id", "patient_id", "hour"))
+
+
+class LanguageJob(Base):
+    __tablename__ = "language_jobs"
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=identifier)
+    replay_id: Mapped[str] = mapped_column(ForeignKey("replays.id"))
+    patient_id: Mapped[str] = mapped_column(ForeignKey("patients.id"))
+    actor_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    hour: Mapped[int] = mapped_column(Integer)
+    operation: Mapped[str] = mapped_column(String)
+    trigger: Mapped[str] = mapped_column(String)
+    dedupe_key: Mapped[str] = mapped_column(String, unique=True)
+    snapshot_hash: Mapped[str] = mapped_column(String)
+    snapshot: Mapped[dict] = mapped_column(JSON)
+    model: Mapped[str] = mapped_column(String)
+    prompt_version: Mapped[str] = mapped_column(String, default="demo-v1")
+    reference_version: Mapped[str] = mapped_column(String, default="demo-v1")
+    status: Mapped[str] = mapped_column(String, default="queued")
+    result: Mapped[dict] = mapped_column(JSON, default=dict)
+    error: Mapped[str | None] = mapped_column(String, nullable=True)
+    created: Mapped[float] = mapped_column(Float, default=time.time)
+    completed: Mapped[float | None] = mapped_column(Float, nullable=True)
+    __table_args__ = (Index("language_job_patient_hour", "replay_id", "patient_id", "hour"),)
+
+
+class SuggestedAction(Base):
+    __tablename__ = "suggested_actions"
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=identifier)
+    job_id: Mapped[str] = mapped_column(ForeignKey("language_jobs.id"))
+    action_key: Mapped[str] = mapped_column(String)
+    status: Mapped[str] = mapped_column(String)
+    actor_id: Mapped[str] = mapped_column(ForeignKey("users.id"))
+    updated: Mapped[float] = mapped_column(Float, default=time.time)
+    __table_args__ = (UniqueConstraint("job_id", "action_key"),)

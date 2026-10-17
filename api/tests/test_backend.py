@@ -22,7 +22,7 @@ def login(client, role="clinician"):
 
 @pytest.fixture
 def app_case(tmp_path):
-    settings = Settings(database_url=f"sqlite:///{tmp_path / 'test.db'}", credentials_path=tmp_path / "credentials.json", clinician_password="test-clinician-password", family_password="test-family-password", start_clock=False)
+    settings = Settings(database_url=f"sqlite:///{tmp_path / 'test.db'}", credentials_path=tmp_path / "credentials.json", clinician_password="test-clinician-password", family_password="test-family-password", start_clock=False, prediction_provider="disconnected", seed_held_out=False)
     app = create_app(settings)
     with TestClient(app) as client:
         yield app, client, settings
@@ -208,7 +208,7 @@ def test_handover_snapshots_edit_conflicts_and_export(app_case):
     assert h["origin"] == "structured_template"
     assert "A saved observation" in h["text"]
     assert "hour 32" in h["text"]
-    assert "no AI model was used" in h["text"]
+    assert "no language model was used" in h["text"]
     response = command(client, headers, f"/handovers/{h['id']}", {"text": "Reviewed draft", "revision": 1}, "PATCH")
     assert response.status_code == 200 and response.json()["revision"] == 2
     assert command(client, headers, f"/handovers/{h['id']}", {"text": "Stale overwrite", "revision": 1}, "PATCH").status_code == 409
@@ -234,11 +234,12 @@ def test_disconnected_and_example_modes_never_return_live_answers(app_case, monk
     messages = next(iter(workspace(client)["care"]["messages"].values()))
     assert messages[-1]["role"] == "system" and "No AI answer" in messages[-1]["text"]
     assert client.get("/api/v1/integrations/status").json()["external_calls_enabled"] is False
-    assert client.get("/api/v1/integrations/references").json()["references"] == []
+    refs = client.get("/api/v1/integrations/references").json()["references"]
+    assert refs and all(r["approved_for_demo"] and not r["reviewed"] for r in refs)
 
 
 def test_restart_persistence_and_idempotent_seed(tmp_path):
-    settings = Settings(database_url=f"sqlite:///{tmp_path / 'persist.db'}", credentials_path=tmp_path / "creds.json", clinician_password="test-clinician-password", family_password="test-family-password", start_clock=False)
+    settings = Settings(database_url=f"sqlite:///{tmp_path / 'persist.db'}", credentials_path=tmp_path / "creds.json", clinician_password="test-clinician-password", family_password="test-family-password", start_clock=False, prediction_provider="disconnected", seed_held_out=False)
     with TestClient(create_app(settings)) as first:
         headers = login(first)
         assert command(first, headers, "/patients/p000001/notes", {"text": "Persistent record"}).status_code == 201

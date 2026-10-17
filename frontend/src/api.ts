@@ -1,6 +1,6 @@
 export type User = { id: string; name: string; email: string; role: 'clinician' | 'family' }
 export type Auth = { user: User; csrf_token: string }
-export type HandoverMeta = { id: string; patientId: string; session: string; hour: number; text: string; revision: number }
+export type HandoverMeta = { id: string; patientId: string; session: string; hour: number; text: string; revision: number; origin?: string; generation_id?: string }
 export type FamilyView = {
   user: User; session_id: string; hour: number;
   patients: { id: string; name: string; initials: string; bed: string; source: 'recorded' | 'synthetic'; readings: { ICULOS: number; HR: number | null; O2Sat: number | null; SBP: number | null }[]; updates: { id: string; text: string; hour: number; approvedBy: string }[] }[];

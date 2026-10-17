@@ -1,25 +1,33 @@
 export type VitalKey = 'HR' | 'O2Sat' | 'SBP' | 'MAP' | 'Resp' | 'Temp'
 export type Reading = { ICULOS: number; [key: string]: number | null }
 export type Band = 'High' | 'Moderate' | 'Low'
+export type Prediction = {
+  origin: 'model' | 'example' | 'disconnected'; status: string; as_of_hour: number;
+  model_version: string | null; feature_version: string | null; limitations: string[];
+  sepsis: { status: string; score: number | null; band: Band | null; alert: boolean | null; alert_threshold: number | null; alert_policy: string | null; factors: {feature: string; value: number | null; contribution: number | null; observation_hours: number[]}[] };
+  data_quality: { reason?: string; contribution_units?: string; history_rows?: number; unobserved_vitals?: string[]; stale_vitals?: string[]; watch_threshold?: number };
+}
+export type ModelStatus = { provider: string; status: string; reason?: string; model_version?: string; alert_threshold?: number; alert_policy?: string }
 export type Patient = {
+  prediction: Prediction; score_history: {ICULOS: number; score: number | null; threshold: number | null}[];
   id: string; name: string; initials: string; age: number | null; sex: string; bed: string;
   focus: string; conditions: string[]; medications: string[]; color: string;
   band: Band | null; score: number | null; source: 'recorded' | 'synthetic'; provenance: string; readings: Reading[];
 }
-export type CareEvent = { id: string; patientId: string; hour: number; kind: string; text: string; created: string; session: string; actorName: string; alertId?: string; alertStatus?: AlertState['status'] }
+export type CareEvent = { id: string; patientId: string; hour: number; kind: string; text: string; created: string; session: string; actorName: string; alertId?: string; alertStatus?: AlertState['status']; generationId?: string; actionKey?: string; actionStatus?: string }
 export type AlertState = { status: 'Open' | 'Acknowledged' | 'In progress' | 'Resolved'; note: string }
 export const VITALS: { key: VitalKey; label: string; short: string; unit: string; color: string }[] = [
-  { key: 'HR', label: 'Heart rate', short: 'Heart rate', unit: 'bpm', color: '#b54739' },
+  { key: 'HR', label: 'Heart rate', short: 'Heart rate', unit: 'bpm', color: '#0077b6' },
   { key: 'O2Sat', label: 'Oxygen saturation', short: 'SpO₂', unit: '%', color: '#176f9a' },
-  { key: 'SBP', label: 'Systolic pressure', short: 'Systolic BP', unit: 'mmHg', color: '#735099' },
-  { key: 'MAP', label: 'Mean arterial pressure', short: 'MAP', unit: 'mmHg', color: '#866022' },
-  { key: 'Resp', label: 'Respiratory rate', short: 'Respiratory rate', unit: '/min', color: '#237553' },
-  { key: 'Temp', label: 'Temperature', short: 'Temperature', unit: '°C', color: '#a66513' },
+  { key: 'SBP', label: 'Systolic pressure', short: 'Systolic BP', unit: 'mmHg', color: '#005280' },
+  { key: 'MAP', label: 'Mean arterial pressure', short: 'MAP', unit: 'mmHg', color: '#087e8b' },
+  { key: 'Resp', label: 'Respiratory rate', short: 'Respiratory rate', unit: '/min', color: '#217186' },
+  { key: 'Temp', label: 'Temperature', short: 'Temperature', unit: '°C', color: '#5263a8' },
 ]
 
 export const ADDITIONAL_VITALS = [
-  { key: 'DBP', label: 'Diastolic blood pressure', unit: 'mmHg', color: '#917ca6' },
-  { key: 'EtCO2', label: 'End-tidal carbon dioxide', unit: 'source units', color: '#7a9272' },
+  { key: 'DBP', label: 'Diastolic blood pressure', unit: 'mmHg', color: '#005280' },
+  { key: 'EtCO2', label: 'End-tidal carbon dioxide', unit: 'source units', color: '#087e8b' },
 ]
 
 export const LABS = [

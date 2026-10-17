@@ -1,5 +1,39 @@
 {
   "$defs": {
+    "GroundedStatement": {
+      "additionalProperties": false,
+      "properties": {
+        "text": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        },
+        "evidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 12,
+          "minItems": 1,
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "citations": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 5,
+          "title": "Citations",
+          "type": "array"
+        }
+      },
+      "required": [
+        "text",
+        "evidence_ids"
+      ],
+      "title": "GroundedStatement",
+      "type": "object"
+    },
     "ObservationReference": {
       "additionalProperties": false,
       "properties": {
@@ -18,6 +52,47 @@
       ],
       "title": "ObservationReference",
       "type": "object"
+    },
+    "SuggestedStep": {
+      "additionalProperties": false,
+      "properties": {
+        "action_id": {
+          "title": "Action Id",
+          "type": "string"
+        },
+        "reason": {
+          "maxLength": 700,
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        },
+        "evidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 12,
+          "minItems": 1,
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "citations": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 5,
+          "minItems": 1,
+          "title": "Citations",
+          "type": "array"
+        }
+      },
+      "required": [
+        "action_id",
+        "reason",
+        "evidence_ids",
+        "citations"
+      ],
+      "title": "SuggestedStep",
+      "type": "object"
     }
   },
   "additionalProperties": false,
@@ -33,8 +108,33 @@
       "type": "string"
     },
     "text": {
+      "maxLength": 8000,
       "title": "Text",
       "type": "string"
+    },
+    "evidence_ids": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 30,
+      "title": "Evidence Ids",
+      "type": "array"
+    },
+    "observations": {
+      "items": {
+        "$ref": "#/$defs/GroundedStatement"
+      },
+      "maxItems": 3,
+      "title": "Observations",
+      "type": "array"
+    },
+    "actions": {
+      "items": {
+        "$ref": "#/$defs/SuggestedStep"
+      },
+      "maxItems": 3,
+      "title": "Actions",
+      "type": "array"
     },
     "citations": {
       "items": {

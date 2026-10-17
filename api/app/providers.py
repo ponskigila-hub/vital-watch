@@ -1,4 +1,4 @@
-"""Contract-first adapters. No model SDK, HTTP client, or external call is used here."""
+"""Language and explicit fixture adapters. The local trained-model adapter is in inference.py."""
 import json
 from pathlib import Path
 from typing import Protocol
@@ -49,7 +49,7 @@ def build_prompt(request: LanguageRequest) -> str:
 
 
 def validate_language_result(request: LanguageRequest, result: LanguageResult) -> LanguageResult:
-    known = {ref.id for ref in request.references if ref.reviewed}
+    known = {ref.id for ref in request.references if ref.reviewed or ref.approved_for_demo}
     if set(result.citations) - known:
         raise ValueError("Citations must refer to supplied, reviewed reference passages")
     observations = {(key, int(row["ICULOS"])) for row in request.observations for key, value in row.items() if key != "ICULOS" and value is not None}

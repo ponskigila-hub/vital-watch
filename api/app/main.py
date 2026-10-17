@@ -1,6 +1,7 @@
 import asyncio
 from contextlib import asynccontextmanager, suppress
 import hashlib
+import logging
 from pathlib import Path
 import secrets
 import time
@@ -13,13 +14,16 @@ from sqlalchemy.exc import IntegrityError
 
 from .config import Settings
 from .database import database, migrate
-from .models import Alert, Assignment, AuthSession, CareEvent, FamilyUpdate, Handover, LoginAttempt, Message, Patient, Reading, Replay, User, identifier
+from .models import Alert, Assignment, AuthSession, CareEvent, FamilyUpdate, Handover, LoginAttempt, Message, Patient, Reading, Replay, User, identifier, LanguageJob
+from .language import enqueue_alert_guidance, GeminiLanguage, approve_bundled_demo_sources, language_worker, queue_job, job_out, handover_draft_text, references as demo_references
+from .language_routes import register_language_routes
 from .providers import DisconnectedLanguage, ExampleLanguage, build_prompt, validate_language_result
-from .schemas import AlertCommand, ApprovedUpdate, Command, FAMILY_COLUMNS, FamilyPatient, FamilyReading, FamilyView, FocusCommand, HandoverEdit, LanguageRequest, Login, PlaybackCommand, PriorityCommand, ProfileEdit, TextCommand, UserOut
+from .schemas import AlertCommand, ApprovedUpdate, Command, FAMILY_COLUMNS, FamilyPatient, FamilyReading, FamilyView, FocusCommand, HandoverEdit, LanguageRequest, Login, PlaybackCommand, PriorityCommand, ProfileEdit, TextCommand, UserOut, HandoverCommand
 from .security import COOKIE, clinician, current_user, digest, get_db, public_user, writing_clinician, writing_user
 from .seed import parse_recording, passwords, seed, seed_alerts
-from .services import active_replay, alerts_for, event, event_out, events_for, handover_out, latest_values, max_hour, patient_or_404, patient_out, prediction, prediction_request, replay_out, require_replay, rows_for, structured_handover, tick, update_out, workspace
+from .services import active_replay, alerts_for, event, event_out, events_for, handover_out, latest_values, max_hour, patient_or_404, patient_out, prediction, prediction_request, replay_out, require_replay, rows_for, structured_handover, tick, update_out, workspace, score_through, integration_status
 
+log = logging.getLogger(__name__)
 PREFIX = "/api/v1"
 DUMMY_HASH = passwords.hash(secrets.token_urlsafe(18))
 
@@ -33,12 +37,32 @@ def create_app(settings: Settings | None = None):
         while True:
             await asyncio.sleep(.5)
             async with clock_lock:
-                with sessions() as db:
-                    tick(db)
+                try:
+                    with sessions() as db:
+                        before = active_replay(db)
+                        old_hour, was_playing = before.hour, before.playing
+                        # Only the clock's newly raised alerts can trigger generation, not seeks/backfill.
+                        known_alerts = set(db.scalars(select(Alert.id).where(Alert.replay_id == before.id)))
+                        tick(db)
+                        replay = active_replay(db)
+                        score_through(db, replay)
+                        enqueue_alert_guidance(db, settings, replay, old_hour, was_playing, known_alerts)
+                except Exception:
+                    log.exception("Replay scoring tick failed; retrying on the next tick")
 
     @asynccontextmanager
     async def lifespan(app):
         migrate(engine)
+        if settings.prediction_provider == "lightgbm":
+            from .inference import LightGBMPrediction
+            provider = LightGBMPrediction(settings.model_path, settings.thresholds_path, settings.alert_policy)
+        elif settings.prediction_provider == "disconnected":
+            provider = None
+        else:
+            raise ValueError("PREDICTION_PROVIDER must be lightgbm or disconnected")
+        language = GeminiLanguage(settings)
+        app.state.language = language
+        sessions.configure(info={"prediction_provider": provider, "language_provider": language})
         with sessions() as db:
             if settings.seed_demo:
                 seed(db, settings)
@@ -46,8 +70,23 @@ def create_app(settings: Settings | None = None):
                 for replay in db.scalars(select(Replay).where(Replay.active.is_(True))):
                     replay.playing = False
                 db.commit()
+            if provider:
+                for replay in db.scalars(select(Replay).where(Replay.active.is_(True))):
+                    replay.example_mode = False
+                    db.commit()
+                    score_through(db, replay)
+            approve_bundled_demo_sources(db)
+            # Never silently resend jobs that were in flight when the process stopped.
+            for job in db.scalars(select(LanguageJob).where(LanguageJob.status == "running")):
+                job.status, job.error = "unavailable", "Generation interrupted by restart. Retry explicitly."
+            db.commit()
+        language_task = asyncio.create_task(language_worker(sessions, language)) if settings.start_clock else None
         task = asyncio.create_task(clock()) if settings.start_clock else None
         yield
+        if language_task:
+            language_task.cancel()
+            with suppress(asyncio.CancelledError):
+                await language_task
         if task:
             task.cancel()
             with suppress(asyncio.CancelledError):
@@ -63,6 +102,7 @@ def create_app(settings: Settings | None = None):
     app.state.engine = engine
     app.state.clock_lock = clock_lock
     app.state.settings = settings
+    register_language_routes(app, settings)
 
     @app.middleware("http")
     async def browser_boundaries(request: Request, call_next):
@@ -158,6 +198,7 @@ def create_app(settings: Settings | None = None):
         db.flush()
         db.add_all([Reading(patient_id=p.id, hour=r["ICULOS"], values=r) for r in rows])
         db.commit()
+        score_through(db, active_replay(db), p.id)
         return {"patient_id": p.id, "records": len(rows)}
 
     @app.get(PREFIX + "/patients/{patient_id}")
@@ -170,6 +211,7 @@ def create_app(settings: Settings | None = None):
         if not body.name.strip():
             raise HTTPException(422, "Patient name must not be blank")
         p.name, p.conditions, p.medications = body.name.strip(), body.conditions, body.medications
+        p.ai_context_approved = False
         event(db, user, p.id, active_replay(db), "Profile updated", "Clinical profile updated by a clinician.")
         db.commit()
         return patient_out(db, p, active_replay(db))
@@ -200,13 +242,15 @@ def create_app(settings: Settings | None = None):
     def evidence(patient_id: str, user=Depends(clinician), db=Depends(get_db)):
         p, replay = patient_or_404(db, patient_id), active_replay(db)
         rows = rows_for(db, p.id, replay.hour)
-        return {"patient_id": p.id, "as_of_hour": replay.hour, "latest": latest_values(rows), "provenance": p.provenance, "prediction": prediction(p.id, replay, rows), "references": [], "reference_status": "not_configured"}
+        return {"patient_id": p.id, "as_of_hour": replay.hour, "latest": latest_values(rows), "provenance": p.provenance, "prediction": prediction(db, p.id, replay, rows), "references": [], "reference_status": "not_configured"}
 
     @app.patch(PREFIX + "/replay")
     def patch_playback(body: PlaybackCommand, user=Depends(writing_clinician), db=Depends(get_db)):
         replay = require_replay(db, body.session_id)
         if body.hour is not None and body.hour > max_hour(db):
             raise HTTPException(422, "Requested hour exceeds the available recording")
+        if body.example_mode is True and db.info.get("prediction_provider"):
+            raise HTTPException(422, "The trained model is configured; example prediction outputs cannot replace model results.")
         fields = body.model_dump(exclude_none=True, exclude={"session_id", "revision"})
         fields.update(revision=Replay.revision + 1, tick_at=time.time())
         result = db.execute(update(Replay).where(Replay.id == replay.id, Replay.revision == body.revision).values(**fields))
@@ -214,6 +258,7 @@ def create_app(settings: Settings | None = None):
             raise HTTPException(409, "Playback was changed by another clinician. Refresh and retry.")
         db.commit()
         db.refresh(replay)
+        score_through(db, replay)
         return replay_out(db, replay)
 
     @app.post(PREFIX + "/replay/restart", status_code=201)
@@ -225,6 +270,7 @@ def create_app(settings: Settings | None = None):
         db.flush()
         seed_alerts(db, replay)
         db.commit()
+        score_through(db, replay)
         return replay_out(db, replay)
 
     @app.get(PREFIX + "/replays")
@@ -242,7 +288,7 @@ def create_app(settings: Settings | None = None):
     @app.post(PREFIX + "/patients/{patient_id}/notes", status_code=201)
     def add_note(patient_id: str, body: TextCommand, user=Depends(writing_clinician), db=Depends(get_db)):
         patient_or_404(db, patient_id)
-        item = event(db, user, patient_id, require_replay(db, body.session_id), "Care note", body.text)
+        item = event(db, user, patient_id, require_replay(db, body.session_id), "Care note", body.text, {"demo_content_confirmed": body.demo_content_confirmed})
         db.commit()
         return event_out(db, item)
 
@@ -277,8 +323,14 @@ def create_app(settings: Settings | None = None):
         return {**alert, "status": body.status}
 
     @app.post(PREFIX + "/patients/{patient_id}/handovers", status_code=201)
-    def generate_handover(patient_id: str, body: Command, user=Depends(writing_clinician), db=Depends(get_db)):
+    def generate_handover(patient_id: str, body: HandoverCommand, user=Depends(writing_clinician), db=Depends(get_db)):
         p, replay = patient_or_404(db, patient_id), require_replay(db, body.session_id)
+        if body.mode == "gemini":
+            job = queue_job(db, settings, p, replay, operation="handover", actor=user, retry=True)
+            if job.status == "ok":
+                db.add(Handover(patient_id=p.id, replay_id=replay.id, actor_id=user.id, hour=job.hour, origin="gemini", generation_id=job.id, text=handover_draft_text(job.result["text"])))
+                db.commit()
+            return job_out(db, job)
         h = Handover(patient_id=p.id, replay_id=replay.id, actor_id=user.id, hour=replay.hour, text=structured_handover(db, p, replay))
         db.add(h)
         db.commit()
@@ -329,10 +381,10 @@ def create_app(settings: Settings | None = None):
     @app.post(PREFIX + "/patients/{patient_id}/messages", status_code=201)
     def send_message(patient_id: str, body: TextCommand, user=Depends(writing_clinician), db=Depends(get_db)):
         p, replay = patient_or_404(db, patient_id), require_replay(db, body.session_id)
-        rows = rows_for(db, p.id, replay.hour)
-        notes = [e.text for e in events_for(db, replay, p.id) if e.kind == "Care note"]
-        context = LanguageRequest(operation="question", patient_id=p.id, as_of_hour=replay.hour, question=body.text, observations=prediction_request(p.id, replay.hour, rows).history, clinical_context={"known_conditions": p.conditions, "medications": p.medications, "fictional_demo_context": True}, notes=notes, prediction=prediction(p.id, replay, rows))
-        result = validate_language_result(context, DisconnectedLanguage().respond(context))
+        if settings.language_provider == "gemini":
+            return job_out(db, queue_job(db, settings, p, replay, operation="question", actor=user, question=body.text, confirmed=body.demo_content_confirmed, retry=True))
+        context = LanguageRequest(operation="question", patient_id=p.id, as_of_hour=replay.hour)
+        result = DisconnectedLanguage().respond(context)
         for role, message in [("user", body.text), ("system", result.text)]:
             db.add(Message(user_id=user.id, patient_id=p.id, replay_id=replay.id, hour=replay.hour, role=role, text=message))
         db.commit()
@@ -348,12 +400,13 @@ def create_app(settings: Settings | None = None):
         return result
 
     @app.get(PREFIX + "/integrations/status")
-    def integrations(user=Depends(clinician)):
-        return {"backend": "connected", "database": "connected", "prediction": "disconnected", "baseline": "disconnected", "language": "disconnected", "references": "not_configured", "external_calls_enabled": False, "linuxone": "not_deployed"}
+    def integrations(user=Depends(clinician), db=Depends(get_db)):
+        return integration_status(db)
 
     @app.get(PREFIX + "/integrations/references")
     def references(user=Depends(clinician)):
-        return {"status": "not_configured", "references": []}
+        refs = demo_references()
+        return {"status": "demo_library" if refs else "not_configured", "references": [r.model_dump() for r in refs]}
 
     def allowed_family_ids(db, user):
         return list(db.scalars(select(Assignment.patient_id).where(Assignment.user_id == user.id)))

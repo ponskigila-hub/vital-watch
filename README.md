@@ -2,10 +2,11 @@
 
 VitalWatch is a hospital monitoring demo that brings patient readings, historical trends, care notes, review priorities, and caregiver handovers into one workspace. Clinicians have a ward-wide view; assigned patients and family members have a separate, limited view of readings and approved updates.
 
-The app includes a React frontend, an authenticated FastAPI backend, and a persistent SQLite database. **The sepsis predictor, personal-baseline detector, and Gemini are not connected yet.** Their integration contracts and prompt templates are included. Scores, alerts, and example conversations marked **example** are fixed demonstration fixtures, not computed predictions.
+The app includes a React frontend, an authenticated FastAPI backend, and a persistent SQLite database. **The trained LightGBM sepsis predictor is connected for local CPU inference.** It uses the trainer’s shared preprocessing and produces saved, patient-specific scores and threshold-crossing alerts as the replay advances. The personal-baseline detector remains disconnected. Gemini guidance, patient chat, and editable AI handovers are implemented as an opt-in educational demo; a backend API key is required. Explicit fixture mode is available for testing; anything marked **example** is not computed by the model.
 
 ## Contents
 
+- [Project progress checklist](PROJECT_CHECKLIST.md)
 - [What works now](#what-works-now)
 - [Install and run](#install-and-run)
 - [Sign in](#sign-in)
@@ -23,15 +24,16 @@ The app includes a React frontend, an authenticated FastAPI backend, and a persi
 
 | Area | Available behavior |
 | --- | --- |
-| Ward overview | Six seeded patient streams, search, example-priority filters, current readings, and trends |
+| Ward overview | Thirteen seeded patient streams, search, model-band filters, current readings, and trends |
 | Patient history | Heart rate, oxygen saturation, systolic pressure, MAP, respiratory rate, and temperature; individual and combined views; period comparisons and hourly measurement tables |
 | Additional measurements | DBP, EtCO2, and 26 laboratory/recorded fields, with explicit missing-data states |
 | Replay | Shared server-controlled playback, pause, seek, speed selection, and archived replay sessions |
-| Care workflow | Persistent notes, manual monitoring focus, clinician review-priority overrides with reasons, example alert acknowledgement and status changes |
+| Care workflow | Persistent notes, manual monitoring focus, clinician review-priority overrides with reasons, model alert acknowledgement and status changes |
 | Handover | Structured server-generated drafts, editable saved revisions, conflict detection, and text export |
 | Family communication | Explicitly approved updates, immediate withdrawal, and patient assignments enforced by the backend |
 | Accounts | Clinician and family roles, session-cookie authentication, password hashing, CSRF protection, and sign-in throttling |
-| Future AI | Separate prediction/language contracts, JSON schemas, example payloads, prompts, and truthful disconnected responses |
+| Sepsis inference | LightGBM v1, shared 127-feature preprocessing, per-hour score history, SHAP contributions, and persisted crossing alerts |
+| Language AI | Opt-in Gemini demo guidance, grounded chat, editable AI handovers, and clinician-tracked review steps |
 
 This is a hackathon prototype, not a clinically validated monitoring or diagnostic system. The current live behavior is **replay of stored hourly records**, not a connection to physical sensors.
 
@@ -132,7 +134,9 @@ Replace `PATIENT_ID` with the patient's ID from the clinical record. This adds a
 
 Sign in as the clinician. The overview displays the seeded patients and their latest available observations through the current replay hour. Open **Patients** to search, filter, or import a recording. Open a patient to see their detailed record.
 
-Scores and alerts labelled **example** demonstrate the intended workflow. In **Settings**, disable **Example prediction outputs** to see the disconnected model state. That setting is shared across the ward.
+With `PREDICTION_PROVIDER=lightgbm` (the default), scores are calculated from each patient’s physiological observations. The score is an uncalibrated research output, not a diagnosis or a calibrated probability. A patient's **Sepsis review** prioritizes the current signal, unresolved alerts, score trend with the alert threshold, and available changes in recorded vital signs. Raw score values, six-hour score differences, peak scores, SHAP contributions, and model metadata are available under **Model details & supporting evidence**. Unresolved alert status stays separate from the current model signal. Review tools link to measurement history, patient context, and assessment notes; they do not generate treatment instructions.
+
+Example prediction outputs cannot replace the trained model while it is configured. To test the old fixtures deliberately, set `PREDICTION_PROVIDER=disconnected`, restart, then enable **Example prediction outputs** in Settings. A model-load or inference failure never silently switches to examples.
 
 ### 2. Replay the patient timeline
 
@@ -152,12 +156,14 @@ Missing observations remain missing. Each latest value identifies its observatio
 
 - **Add note** saves an observation to the patient timeline with the authenticated caregiver and patient hour.
 - **Change focus** stores a manual monitoring focus. Free-text conditions are labels in this version; the app does not generate disease-specific medical guidance.
-- **Set clinical review priority** records a clinician override and reason separately from any example score.
-- **Alert center** lets clinicians acknowledge or update example alerts and preserve the action history.
+- **Set clinical review priority** records a clinician override and reason separately from the model score.
+- **Alert center** lets clinicians acknowledge or update model-generated alerts and preserve the action history. Alerts are created when a score crosses upward through the selected threshold; sustained high scores do not create another alert every hour. A low score or an empty alert list does not establish absence of sepsis.
+
+The alert center summarizes alerts awaiting acknowledgement, under review, and resolved. Each item prioritizes patient identity, the recorded event hour, current signal availability, and review controls. **Event details** retains the original model output, score, threshold, policy, and model key without placing technical metadata in the main alert heading. Recorded events remain distinct from the patient's current signal. The overview's compact feed always shows unresolved alerts, independently of the alert-center filter.
 
 ### 5. Prepare a handover
 
-Open **Handover**, select the patient, and choose **Create structured draft**. The backend builds a snapshot from available measurements and recorded actions using a local template. It is labelled as a structured draft; no language model is involved.
+Open **Handover**, select the patient, and choose **Create structured draft**. The backend builds a snapshot from available measurements, the current sepsis model result, and recorded actions using a local template. It is labelled as a structured draft; no language model is involved.
 
 Edit the text and click **Save draft**. Unsaved edits stay in the current page and can be lost on refresh. **Export** downloads the saved draft; save changes before exporting. **Regenerate** creates a new snapshot from the current replay state, so save or copy any edits you need first. If another clinician saves the same draft, conflicting edits are rejected instead of silently overwriting their work.
 
@@ -175,7 +181,7 @@ Clinical notes, diagnoses, medications, labs, scores, ranking, alerts, and inter
 
 ### 7. Try the patient question interface
 
-Open **Ask VitalWatch** on a patient. Questions and the system's disconnected response are saved to the clinician's account. The interface also offers a clearly labelled example conversation. It does not currently contact Gemini, generate clinical answers, or retrieve medical references.
+Open **Ask VitalWatch** on an approved demo patient. With Gemini configured, confirm your question contains fictional/demo content only, then send it. The backend queues a response from the patient snapshot; the conversation displays supporting evidence and the patient hour. Without configuration, it returns an explicit disconnected response. No real personal data should be entered.
 
 ## Import patient recordings
 
@@ -189,24 +195,48 @@ Supported format:
 - Positive, unique, increasing integer `ICULOS` values. Gaps are allowed.
 - At most 20,000 hourly rows and a maximum upload read limit of 5 MiB.
 
+After import, available observations through the current replay hour are scored automatically. Future observations are scored as the replay advances.
+
 The parser rejects malformed rows and non-finite numeric values other than the supported missing markers. `SepsisLabel` is excluded from stored clinical readings and model context. Byte-identical recordings are rejected as duplicates. Import validation is atomic: a rejected file does not leave a partial patient.
 
-The bundled `p000001.psv` is already seeded, so importing it again returns a duplicate warning. Use a different recording to demonstrate import. If a recording begins later than the current replay hour, advance the replay before expecting observations to appear.
+The bundled `p000001.psv` and seven held-out recordings are already seeded, so importing those files again returns a duplicate warning. Use a different recording to demonstrate import. If a recording begins later than the current replay hour, advance the replay before expecting observations to appear.
 
 The approximately 40,000-file training collection is **not** included or automatically imported. Training data preparation is separate from this one-patient demo import workflow. The clinical workspace snapshot currently displays at most 100 patients; the API has a paginated patient endpoint, but the frontend is not a bulk dataset browser.
 
 ## Data and replay behavior
 
-- `api/demo/p000001.psv` is the user-supplied PhysioNet Challenge 2019 recording. The other five seeded streams are deterministic synthetic data.
+- The seeded ward contains eight recorded PhysioNet streams (`p000001` plus seven held-out demo recordings) and five deterministic synthetic streams. Existing records and care actions are preserved when the additional recordings are added.
 - All initial patient identities, diagnoses, medications, and added clinical context are fictional and separate from the recorded measurements.
 - Dataset attribution and preserved upstream notices are in [api/demo/README.md](api/demo/README.md) and [PHYSIONET_LICENSE.txt](api/demo/PHYSIONET_LICENSE.txt).
 - The initial demo replay starts paused at patient hour 34. New replay sessions begin at hour 1.
 - The database persists imported readings, accounts, assignments, care events, handovers, messages, and approved updates across server restarts.
-- History, model input, and time-dependent care records are bounded by the replay hour. Moving backward hides later records; it does not delete them.
+- History, model input, score history, and time-dependent care records are bounded by the replay hour. Moving backward hides later records; it does not delete them.
 - Restarting the server restores the saved replay hour **paused**.
 - Clinical records are not stored in browser local storage. Old browser-only demo records are not migrated.
 
 The default database is `api/runtime/vitalwatch.db`. For a simple consistent local backup, stop the backend and copy the runtime directory to a private backup location. Do not commit runtime databases or credentials.
+
+### Held-out demo walkthrough
+
+The seven recordings in `api/demo/held_out/` are added automatically on startup when `DEMO_SEED=true` and `DEMO_HELD_OUT=true`. They retain their PhysioNet IDs but use neutral fictional display names. Restarting does not add duplicates or reset existing care records. They are not assigned to the family account automatically.
+
+| Patient ID | Fictional display name | Recorded hours |
+| --- | --- | --- |
+| p000574 | Avery Morgan | 76 |
+| p000679 | Casey Patel | 74 |
+| p000185 | Riley Bennett | 65 |
+| p000346 | Morgan Ellis | 64 |
+| p000021 | Taylor Reed | 57 |
+| p000132 | Jamie Park | 56 |
+| p000802 | Alex Rivera | 55 |
+
+The trainer's [offline manifest](api/demo/held_out/demo_patients.json) describes early/late detections, quiet recordings, a missed case, and a false alarm. Its timings use **`10pct_false_alert_patients`**, threshold **0.0718975865**. The configured demo retains the stricter **5% validation policy**, so its alert timings differ. To reproduce the supplied walkthrough, set `SEPSIS_ALERT_POLICY=10pct_false_alert_patients` in `api/.env`, restart, and state that operating point in the presentation. Keep the missed case and false alarm in the demonstration rather than presenting only successful detections.
+
+At the manifest's policy, the first threshold crossing occurs at hour 53 for p000802, hour 56 for p000574, hour 59 for p000679 and p000185, and hour 64 for p000346. p000021 and p000132 do not cross. The two quiet recordings end at hours 57 and 56, respectively; advancing beyond an individual recording's end does not invent a new score.
+
+With the selected **5% policy**, first alerts occur at hour **53** for p000802, **57** for p000574, **60** for p000185, and **64** for p000346. p000021, p000132, and p000679 do not cross. Thus p000679's early-detection example at the 10% policy becomes a missed case at 5%; do not present the 10% category as a result of the selected policy. p000574 contains 76 observations spanning patient hours 2–77.
+
+The files' outcome labels and manifest annotations are strictly offline evaluation material. They are not loaded into patient conditions, medication lists, AI prompts, clinical API responses, or inference inputs. See [the demo recording guide](api/demo/held_out/README.md) for provenance and attribution.
 
 ## Configuration
 
@@ -217,6 +247,11 @@ Copy `api/.env.example` to `api/.env` and restart the backend after changes.
 | `DATABASE_URL` | `sqlite:///api/runtime/vitalwatch.db`; relative to the directory from which the server is launched |
 | `COOKIE_SECURE` | `false` for local HTTP; use `true` behind an HTTPS deployment |
 | `ALLOWED_ORIGINS` | Exact localhost/127.0.0.1 origins on ports 5173 and 8000; comma-separated |
+| `PREDICTION_PROVIDER` | `lightgbm`; use `disconnected` only for explicit fixture testing |
+| `SEPSIS_MODEL_PATH` | `models/model_v1.txt`; defaults to the repository artifact when unset |
+| `SEPSIS_THRESHOLDS_PATH` | `models/thresholds_v1.json`; validation-selected operating points |
+| `SEPSIS_ALERT_POLICY` | `5pct_false_alert_patients`; also accepts `10pct_false_alert_patients` or `20pct_false_alert_patients` |
+| `DEMO_HELD_OUT` | `true`; adds the seven bundled held-out recordings idempotently when demo seeding is enabled |
 | `DEMO_SEED` | `true`; seeds demo records/accounts when absent |
 | `SESSION_HOURS` | `8`; authenticated session lifetime in hours |
 | `DEMO_CLINICIAN_PASSWORD` | Optional initial-account password override; otherwise randomly generated |
@@ -224,19 +259,68 @@ Copy `api/.env.example` to `api/.env` and restart the backend after changes.
 
 Password overrides apply when creating the account, not as a reset mechanism. Setting `DEMO_SEED=false` does not remove existing demo data; a fresh empty database still needs initialization before the workspace can be used.
 
-`PREDICTION_PROVIDER`, `LANGUAGE_PROVIDER`, `GEMINI_API_KEY`, `GEMINI_MODEL`, `AI_TIMEOUT_SECONDS`, and `AI_MAX_OUTPUT_TOKENS` are **reserved integration placeholders**. They do not currently activate providers, make network calls, or enforce future provider limits. Adding a Gemini key alone does not enable chat. Keep keys on the backend; never put them in frontend environment variables or committed files.
+### Enable Gemini for the educational demo
+
+Install the updated backend requirements, then configure the ignored `api/.env` and restart the API:
+
+```dotenv
+LANGUAGE_PROVIDER=gemini
+GEMINI_API_KEY=your-key-here
+GEMINI_MODEL=gemini-3.5-flash-lite
+GEMINI_FALLBACK_MODELS=gemini-3.1-flash-lite
+AI_TIMEOUT_SECONDS=20
+AI_MIN_INTERVAL_SECONDS=10
+AI_MAX_OUTPUT_TOKENS=2048
+```
+
+Keep the key on the backend; never use frontend `VITE_` variables or commit it. Google project/model access and free quota are required. There is no automatic paid-model fallback. This is an educational simulation, not medical advice or clinical practice. Only approved bundled public/synthetic demo streams are eligible; new imports remain local.
+
+- Open **Sepsis review → Suggested review steps → Generate guidance**. A newly raised model alert during replay also queues guidance. Startup scoring, backfill and seeks do not.
+- Review the explanation, observations, suggested steps, patient hour and expandable sources. Older guidance must be refreshed before accepting new actions.
+- **Accept plan** creates a planned task in the care timeline. **Mark completed** is separate. Gemini never changes priorities or resolves alerts.
+- Chat requires fictional/demo-content confirmation before transmission to Google. New care notes are excluded unless their author checks the same consent option.
+- **Generate AI draft** creates an editable handover. Template drafts remain available, and conflicting edits or failed generation preserve existing drafts.
+- The small supplied reference library is developer-selected and not clinically reviewed. Structural evidence checks do not establish factual correctness.
+
+Check configuration without contacting Google:
+
+```bash
+.venv/bin/python -m api.smoke_gemini
+```
+
+After configuring a key, explicitly run one entirely synthetic live test:
+
+```bash
+.venv/bin/python -m api.smoke_gemini --send-demo
+```
+
+Quota failures, timeouts and invalid responses are displayed truthfully. Monitoring continues independently. See [integration details](api/INTEGRATIONS.md) for contracts and data boundaries.
 
 ## Model and Gemini integration
 
-Read **[api/INTEGRATIONS.md](api/INTEGRATIONS.md)** before connecting a trained model or language provider.
+Read **[api/INTEGRATIONS.md](api/INTEGRATIONS.md)** for the connected sepsis adapter, operating policies, and remaining language/baseline work.
 
-The planned responsibilities are separate:
+### Enable the pulled model on an existing installation
 
-1. **Sepsis predictor:** structured physiological history in, model-specific sepsis output out.
+```sh
+.venv/bin/python -m pip install -r api/requirements.txt
+```
+
+Edit an existing `api/.env` so `PREDICTION_PROVIDER=lightgbm` (old installations may explicitly contain `disconnected`), then restart the backend. The new prediction-results migration runs automatically and preserves accounts and care records. Check `/api/v1/integrations/status` while signed in, or the app’s Settings page. The expected provider is `lightgbm` with status `connected`.
+
+The model is loaded once, verifies its exact feature names/order, and runs with one inference thread. Results are stored per replay, patient, hour, and model/feature/adapter/policy fingerprint. Startup, import, replay seeking, and the background replay clock calculate missing results. Scoring continues without an open browser. Repeated dashboard refreshes read saved results instead of running inference again. Forward seeks backfill skipped observation hours; moving backward never exposes future scores or alerts.
+
+The default review threshold is **0.0936930679**, the trainer’s `5pct_false_alert_patients` validation operating point. “5%” describes the share of non-sepsis patients with an alert in the validation selection process, not a patient’s sepsis probability or a guaranteed deployment false-alert rate. **High** means the score meets the selected threshold; **Moderate** means it meets the next lower supplied threshold, if one exists; **Low** is below those cutoffs. These are application display bands, not independently trained diagnoses or triage instructions. Clinician priority overrides remain separate.
+
+Missing measured values stay missing. Model v1 requires consecutive hourly rows inside its window; records with hour gaps, no usable physiological observations, or no new row at the selected hour receive an explicit unavailable/insufficient-history state. Short histories may be scored when usable; they are labelled with their available row count. Transient inference failures are saved without a numeric score and may retry after 30 seconds. No fictional profile data or `SepsisLabel` enters inference.
+
+Responsibilities remain separate:
+
+1. **Sepsis predictor (connected):** physiological history → shared feature builder → LightGBM v1 → saved score, factors, and crossing alert.
 2. **Personal-baseline detector:** a separate baseline/deviation result; descriptive period comparisons are not a substitute for a validated detector.
-3. **Gemini/language provider:** patient questions, explanations, suggested monitoring focus, and future AI-assisted handovers, using supplied evidence and reviewed reference passages.
+3. **Gemini/language provider:** opt-in demo guidance, patient questions and editable AI handovers using supplied evidence and a developer-selected reference library. AI focus selection remains future work.
 
-The current prediction request accepts at most 24 records within the last 24 patient-hours, preserves missing values as `null`, and rejects labels or future observations. Align this window and feature preparation with the model trainer before integration. Training and serving must use the same versioned preprocessing.
+The current prediction request accepts at most 24 records within the last 24 patient-hours, preserves missing values as `null`, and rejects labels or future observations. Serving imports the same `src/features.py` used during training. Regression tests compare training/batch/window feature vectors and scores, including cutoff and future-mutation checks.
 
 Available handoff files:
 
@@ -244,13 +328,17 @@ Available handoff files:
 | --- | --- |
 | `api/app/schemas.py` | Typed request/result contracts and validation |
 | `api/app/providers.py` | Provider interfaces, disconnected/example adapters, prompt construction, and output-reference checks |
-| `api/app/services.py` | Prediction call boundary and replay-bounded input preparation |
+| `api/app/inference.py` | Loaded LightGBM adapter, eligibility checks, batch inference, and SHAP output |
+| `src/features.py` | Shared training and serving feature implementation |
+| `models/model_v1.txt`, `models/thresholds_v1.json` | Trained text artifact and validation thresholds |
+| `results/eval_v1.json` | Trainer-supplied evaluation; not independently reproduced here |
+| `api/app/services.py` | Replay-bounded inputs, saved results, alert episodes, and score-history retrieval |
 | `api/templates/contracts/` | Generated JSON schemas |
 | `api/templates/prediction-*.example.json` | Example prediction request and disconnected result |
 | `api/templates/prompts/` | Question, explanation, focus, and handover prompt templates |
 | `api/templates/references.example.json` | Empty reference registry template; no medical library is supplied yet |
 
-Provider integration, medical reference curation, real model training/serving, Gemini quota/error handling, and evaluation remain future work. No model API key is needed to use the implemented workflows.
+Personal-baseline inference, clinically reviewed reference curation, AI focus selection, and independent clinical evaluation remain future work. No API key is needed for monitoring and template workflows; Gemini requires a separately configured backend key.
 
 ## API and project structure
 
@@ -301,9 +389,10 @@ From the repository root:
 ```sh
 .venv/bin/python -m pytest api/tests -q
 npm run build --prefix frontend
+npm test --prefix frontend
 ```
 
-The backend suite currently contains **13 tests** covering authentication, expiry/throttling, CSRF/origin checks, family field restrictions, historical cutoffs, missing observations, imports, event persistence, replay controls, approved-update withdrawal, handover revisions/export, disconnected providers, model contracts, and concurrent clinical writes. The frontend build checks TypeScript and produces the compiled application.
+The backend suite currently contains **26 tests** covering authentication, expiry/throttling, CSRF/origin checks, family field restrictions, historical cutoffs, missing observations, imports, event persistence, replay controls, approved-update withdrawal, handover revisions/export, disconnected providers, model contracts, concurrent clinical writes, real artifact scoring, training/serving parity, SHAP sums, automatic background scoring, imports, model failures/retries, migration preservation, persisted results, and alert deduplication. The frontend build checks TypeScript and produces the compiled application. Six frontend calculation tests verify score changes, missing hours, cutoff handling, persistent review status, and measurement comparisons.
 
 The clinician note → structured handover → approved family update flow has also been checked manually in the local browser. Passing these checks does not establish clinical validity or production readiness.
 
@@ -319,7 +408,9 @@ The clinician note → structured handover → approved family update flow has a
 | No readings appear at the selected hour | Seek into the recording's time range. A missing field may never have been recorded; it is not filled with invented values. |
 | Family view is empty | Ensure the account has a patient assignment. Approved updates after the selected hour are hidden, and withdrawn updates stay hidden. |
 | Replay moves unexpectedly | The clock is shared with every viewer. Check whether another clinician is playing or seeking. |
-| AI gives a disconnected response | Expected: provider templates are present, but trained models and Gemini are not connected. |
+| Chat gives a disconnected response | Configure LANGUAGE_PROVIDER=gemini and a backend key, then restart. Confirm demo-only text before sending. Template handovers still work without Gemini. |
+| Sepsis model is unavailable | Install the updated Python requirements, check `PREDICTION_PROVIDER`, artifact paths, and backend logs. Linux may require an OpenMP runtime such as `libgomp1`; macOS may need `libomp`. No example score replaces a failed inference. |
+| Scores still look like fixed examples | Set `PREDICTION_PROVIDER=lightgbm` in an existing `api/.env` and restart. |
 | Port 5173 is occupied | Vite may choose another port. Free 5173, or explicitly configure the chosen frontend origin in the backend. |
 | Built frontend does not load from port 8000 | Build `frontend/`, then restart the backend so it mounts the assets directory. |
 | A second empty workspace appears | Launch backend/CLI commands from the repository root, or use an absolute SQLite path. |
@@ -332,4 +423,4 @@ For the next deployment step, verify Python/package availability on the provided
 
 Run **one backend worker / one application instance** for the current shared-clock design. Multiple workers would each start a replay clock; a distributed clock/locking design is not implemented. SQLite is the implemented and tested database configuration. External database drivers and migrations have not been validated.
 
-Further work includes LinuxONE/container deployment, trained prediction adapters and matching preprocessing, a reviewed medical reference library, live sensor ingestion, production account administration, and broader operational/clinical validation. Application code licensing is not specified by the upstream dataset notices; dataset attribution is retained separately.
+Further work includes LinuxONE/container deployment, a trained personal-baseline detector, a reviewed medical reference library, live sensor ingestion, production account administration, and broader operational/clinical validation. Application code licensing is not specified by the upstream dataset notices; dataset attribution is retained separately.

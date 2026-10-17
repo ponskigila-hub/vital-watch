@@ -1,7 +1,7 @@
 import math
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, model_validator
 
 READING_COLUMNS = "HR O2Sat Temp SBP MAP DBP Resp EtCO2 BaseExcess HCO3 FiO2 pH PaCO2 SaO2 AST BUN Alkalinephos Calcium Chloride Creatinine Bilirubin_direct Glucose Lactate Magnesium Phosphate Potassium Bilirubin_total TroponinI Hct Hgb PTT WBC Fibrinogen Platelets Age Gender Unit1 Unit2 HospAdmTime ICULOS".split()
 FAMILY_COLUMNS = ("HR", "O2Sat", "SBP")
@@ -29,6 +29,7 @@ class Command(Input):
 
 class TextCommand(Command):
     text: str = Field(min_length=1, max_length=16000)
+    demo_content_confirmed: bool = False
 
     @model_validator(mode="after")
     def trim(self):
@@ -134,6 +135,8 @@ class SepsisOutput(Input):
     score: float | None = Field(default=None, ge=0, le=1)
     band: Literal["High", "Moderate", "Low"] | None = None
     alert: bool | None = None
+    alert_threshold: float | None = Field(default=None, ge=0, le=1)
+    alert_policy: str | None = None
     factors: list[Factor] = Field(default_factory=list)
 
 
@@ -153,6 +156,7 @@ class PredictionResult(Input):
     model_version: str | None = None
     feature_version: str | None = None
     origin: Literal["disconnected", "example", "model"] = "disconnected"
+    limitations: list[str] = Field(default_factory=list)
 
 
 class ReferencePassage(Input):
@@ -162,10 +166,11 @@ class ReferencePassage(Input):
     passage: str
     provenance: str
     reviewed: bool = False
+    approved_for_demo: bool = False
 
 
 class LanguageRequest(Input):
-    operation: Literal["question", "explanation", "focus", "handover"]
+    operation: Literal["question", "explanation", "focus", "handover", "guidance"]
     patient_id: str
     as_of_hour: int = Field(ge=1)
     question: str = Field(default="", max_length=16000)
@@ -174,6 +179,8 @@ class LanguageRequest(Input):
     notes: list[str] = Field(default_factory=list)
     prediction: PredictionResult | None = None
     references: list[ReferencePassage] = Field(default_factory=list)
+    evidence: dict = Field(default_factory=dict)
+    conversation: list[dict[str, str]] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def validate_context(self):
@@ -193,11 +200,40 @@ class ObservationReference(Input):
     hour: int
 
 
+class GroundedStatement(Input):
+    text: str = Field(min_length=1, max_length=1000)
+    evidence_ids: list[str] = Field(min_length=1, max_length=12)
+    citations: list[str] = Field(default_factory=list, max_length=5)
+
+
+class SuggestedStep(Input):
+    action_id: str
+    reason: str = Field(min_length=1, max_length=700)
+    evidence_ids: list[str] = Field(min_length=1, max_length=12)
+    citations: list[str] = Field(min_length=1, max_length=5)
+
+
 class LanguageResult(Input):
+    _model_used: str | None = PrivateAttr(default=None)
     status: Literal["disconnected", "example", "ok", "unavailable"]
-    text: str
+    text: str = Field(max_length=8000)
+    evidence_ids: list[str] = Field(default_factory=list, max_length=30)
+    observations: list[GroundedStatement] = Field(default_factory=list, max_length=3)
+    actions: list[SuggestedStep] = Field(default_factory=list, max_length=3)
     citations: list[str] = Field(default_factory=list)
     observation_references: list[ObservationReference] = Field(default_factory=list)
     limitations: list[str] = Field(default_factory=list)
     proposed_focus: str | None = None
     requires_clinician_confirmation: bool = True
+
+
+class GenerationCommand(Command):
+    retry: bool = False
+
+
+class HandoverCommand(Command):
+    mode: Literal["template", "gemini"] = "template"
+
+
+class SuggestedActionCommand(Command):
+    status: Literal["accepted", "dismissed", "completed"]

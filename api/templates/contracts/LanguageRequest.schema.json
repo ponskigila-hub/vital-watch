@@ -128,7 +128,6 @@
           "$ref": "#/$defs/BaselineOutput"
         },
         "data_quality": {
-          "additionalProperties": true,
           "title": "Data Quality",
           "type": "object"
         },
@@ -165,6 +164,13 @@
           ],
           "title": "Origin",
           "type": "string"
+        },
+        "limitations": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Limitations",
+          "type": "array"
         }
       },
       "required": [
@@ -202,6 +208,11 @@
           "default": false,
           "title": "Reviewed",
           "type": "boolean"
+        },
+        "approved_for_demo": {
+          "default": false,
+          "title": "Approved For Demo",
+          "type": "boolean"
         }
       },
       "required": [
@@ -231,8 +242,8 @@
         "score": {
           "anyOf": [
             {
-              "maximum": 1,
-              "minimum": 0,
+              "maximum": 1.0,
+              "minimum": 0.0,
               "type": "number"
             },
             {
@@ -271,6 +282,32 @@
           "default": null,
           "title": "Alert"
         },
+        "alert_threshold": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Alert Threshold"
+        },
+        "alert_policy": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Alert Policy"
+        },
         "factors": {
           "items": {
             "$ref": "#/$defs/Factor"
@@ -290,7 +327,8 @@
         "question",
         "explanation",
         "focus",
-        "handover"
+        "handover",
+        "guidance"
       ],
       "title": "Operation",
       "type": "string"
@@ -328,7 +366,6 @@
       "type": "array"
     },
     "clinical_context": {
-      "additionalProperties": true,
       "title": "Clinical Context",
       "type": "object"
     },
@@ -355,6 +392,20 @@
         "$ref": "#/$defs/ReferencePassage"
       },
       "title": "References",
+      "type": "array"
+    },
+    "evidence": {
+      "title": "Evidence",
+      "type": "object"
+    },
+    "conversation": {
+      "items": {
+        "additionalProperties": {
+          "type": "string"
+        },
+        "type": "object"
+      },
+      "title": "Conversation",
       "type": "array"
     }
   },

@@ -1,0 +1,23 @@
+{
+  "version": "demo-v1",
+  "references": [
+    {
+      "id": "ssc-adult-screening",
+      "title": "Surviving Sepsis Campaign adult guidelines — screening context",
+      "url": "https://www.sccm.org/survivingsepsiscampaign/guidelines-and-resources/surviving-sepsis-campaign-adult-guidelines",
+      "passage": "Educational paraphrase: screening supports recognition and assessment. A single test or biomarker cannot establish or exclude sepsis. This demo's research score is not a diagnosis.",
+      "provenance": "SCCM, adult guidelines, 2026; accessed 2026-10-17. Short original educational paraphrase, not a reproduced protocol. Developer-selected for the hackathon; not clinically reviewed. Applies to adult demo records only.",
+      "reviewed": false,
+      "approved_for_demo": true
+    },
+    {
+      "id": "vitalwatch-demo-workflow",
+      "title": "VitalWatch educational review workflow v1",
+      "url": "https://github.com/ponskigila-hub/vital-watch",
+      "passage": "In this simulation, review the recorded values and their timestamps, compare trends and missing observations, document a simulated assessment, and demonstrate routing an alert for review according to a local workflow. Accepting a suggested task records a plan, not completion. These are software demonstration steps, not medical advice.",
+      "provenance": "VitalWatch authors, 2026-10-17, project-owned educational workflow v1. Not a hospital protocol; not clinically reviewed.",
+      "reviewed": false,
+      "approved_for_demo": true
+    }
+  ]
+}

@@ -79,6 +79,45 @@ def seed_alerts(db, replay):
             db.add(Alert(replay_id=replay.id, patient_id=patient_id, hour=hour, title=title, band=band, detail=detail))
 
 
+# Neutral fictional identities. Outcome categories and onset times are intentionally
+# absent: the trainer's evaluation manifest must not enter clinical context.
+HELD_OUT_IDENTITIES = [
+    ("p000574", "Avery Morgan", "sage"),
+    ("p000679", "Casey Patel", "blue"),
+    ("p000185", "Riley Bennett", "sand"),
+    ("p000346", "Morgan Ellis", "lilac"),
+    ("p000021", "Taylor Reed", "rose"),
+    ("p000132", "Jamie Park", "blue"),
+    ("p000802", "Alex Rivera", "sage"),
+]
+
+
+def seed_held_out_patients(db):
+    """Add the bundled recordings without resetting existing patients or replay state."""
+    prepared = []
+    for patient_id, name, color in HELD_OUT_IDENTITIES:
+        content = (ROOT / "demo" / "held_out" / f"{patient_id}.psv").read_bytes()
+        file_hash = hashlib.sha256(content).hexdigest()
+        if db.scalar(select(Patient).where(Patient.source_hash == file_hash)):
+            continue
+        if db.get(Patient, patient_id):
+            raise ValueError(f"Demo recording ID {patient_id} conflicts with a different existing patient; existing data was not replaced")
+        prepared.append((patient_id, name, color, file_hash, parse_recording(content)))
+    beds = set(db.scalars(select(Patient.bed)))
+    number = 1
+    for patient_id, name, color, file_hash, rows in prepared:
+        while str(number).zfill(2) in beds:
+            number += 1
+        bed = str(number).zfill(2)
+        beds.add(bed)
+        first = rows[0]
+        patient = Patient(ai_demo_approved=True, ai_context_approved=True, id=patient_id, name=name, age=first.get("Age"), sex={0: "Female", 1: "Male"}.get(first.get("Gender"), "Not specified"), bed=bed, color=color, source="recorded", source_hash=file_hash, provenance=f"PhysioNet Challenge 2019 · held-out demo recording {patient_id}.psv; fictional display identity; split designation supplied by trainer", focus="General monitoring", conditions=[], medications=[])
+        db.add(patient)
+        db.flush()
+        db.add_all([Reading(patient_id=patient_id, hour=row["ICULOS"], values=row) for row in rows])
+    return len(prepared)
+
+
 def seed(db, settings: Settings):
     if not db.scalar(select(func.count()).select_from(Patient)):
         records = [
@@ -91,10 +130,13 @@ def seed(db, settings: Settings):
         ]
         for index, (id_, name, age, sex, color, focus, conditions) in enumerate(records):
             content = (ROOT / "demo/p000001.psv").read_bytes() if index == 0 else None
-            db.add(Patient(id=id_, name=name, age=age, sex=sex, bed=str(index + 1).zfill(2), color=color, focus=focus, conditions=conditions, medications=["Fictional medication list — not supplied by dataset"], source="recorded" if content else "synthetic", source_hash=hashlib.sha256(content).hexdigest() if content else None, provenance="PhysioNet Challenge 2019 · p000001.psv; fictional identity and clinical context" if content else "Deterministic synthetic demo readings; fictional identity and context"))
+            db.add(Patient(ai_demo_approved=True, ai_context_approved=True, id=id_, name=name, age=age, sex=sex, bed=str(index + 1).zfill(2), color=color, focus=focus, conditions=conditions, medications=["Fictional medication list — not supplied by dataset"], source="recorded" if content else "synthetic", source_hash=hashlib.sha256(content).hexdigest() if content else None, provenance="PhysioNet Challenge 2019 · p000001.psv; fictional identity and clinical context" if content else "Deterministic synthetic demo readings; fictional identity and context"))
             db.flush()
             for row in parse_recording(content) if content else synthetic(index):
                 db.add(Reading(patient_id=id_, hour=row["ICULOS"], values=row))
+        db.flush()
+    if settings.seed_held_out:
+        seed_held_out_patients(db)
         db.flush()
     credentials = []
     for email, name, role, override in [("clinician@vitalwatch.local", "Dr. Alex Lee", "clinician", settings.clinician_password), ("family@vitalwatch.local", "Jordan Brooks", "family", settings.family_password)]:

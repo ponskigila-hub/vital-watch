@@ -1,0 +1,98 @@
+{
+  "model_version": "v1",
+  "alert_threshold": 0.0719,
+  "selection_rule": "From test-split patients with >=48 recorded hours, take the first patient(s) by ID that fit each category. Not hand-picked for good-looking scores. Alert = model score >= the 10% false-alert threshold. Onset = first SepsisLabel hour + 6 (labels are pre-shifted).",
+  "patients": [
+    {
+      "file": "p000574.psv",
+      "physionet_id": "p000574",
+      "split_role": "test (held out from training and threshold selection), set A",
+      "category": "sepsis_detected_early_6to24h",
+      "n_hours": 76,
+      "sepsis_onset_hour": 75.0,
+      "first_alert_hour": 56.0,
+      "hours_alert_before_onset": 19.0,
+      "alert_episodes": 2,
+      "peak_model_score": 0.1924,
+      "note": "Sepsis patient. Model alert fires 6-24 h before onset (threshold = 10% false-alert point)."
+    },
+    {
+      "file": "p000679.psv",
+      "physionet_id": "p000679",
+      "split_role": "test (held out from training and threshold selection), set A",
+      "category": "sepsis_detected_early_6to24h",
+      "n_hours": 74,
+      "sepsis_onset_hour": 71.0,
+      "first_alert_hour": 59.0,
+      "hours_alert_before_onset": 12.0,
+      "alert_episodes": 4,
+      "peak_model_score": 0.0888,
+      "note": "Sepsis patient. Model alert fires 6-24 h before onset (threshold = 10% false-alert point)."
+    },
+    {
+      "file": "p000185.psv",
+      "physionet_id": "p000185",
+      "split_role": "test (held out from training and threshold selection), set A",
+      "category": "sepsis_detected_late_under6h",
+      "n_hours": 65,
+      "sepsis_onset_hour": 62.0,
+      "first_alert_hour": 59.0,
+      "hours_alert_before_onset": 3.0,
+      "alert_episodes": 1,
+      "peak_model_score": 0.1168,
+      "note": "Sepsis patient. Model alert fires less than 6 h before onset."
+    },
+    {
+      "file": "p000346.psv",
+      "physionet_id": "p000346",
+      "split_role": "test (held out from training and threshold selection), set A",
+      "category": "sepsis_missed",
+      "n_hours": 64,
+      "sepsis_onset_hour": 62.0,
+      "first_alert_hour": 64.0,
+      "hours_alert_before_onset": null,
+      "alert_episodes": 1,
+      "peak_model_score": 0.1232,
+      "note": "Sepsis patient. No alert before onset (first alert came after onset). Keep this one: it shows a miss."
+    },
+    {
+      "file": "p000021.psv",
+      "physionet_id": "p000021",
+      "split_role": "test (held out from training and threshold selection), set A",
+      "category": "no_sepsis_quiet",
+      "n_hours": 57,
+      "sepsis_onset_hour": null,
+      "first_alert_hour": null,
+      "hours_alert_before_onset": null,
+      "alert_episodes": 0,
+      "peak_model_score": 0.0373,
+      "note": "No sepsis. Model never alerts."
+    },
+    {
+      "file": "p000132.psv",
+      "physionet_id": "p000132",
+      "split_role": "test (held out from training and threshold selection), set A",
+      "category": "no_sepsis_quiet",
+      "n_hours": 56,
+      "sepsis_onset_hour": null,
+      "first_alert_hour": null,
+      "hours_alert_before_onset": null,
+      "alert_episodes": 0,
+      "peak_model_score": 0.0527,
+      "note": "No sepsis. Model never alerts."
+    },
+    {
+      "file": "p000802.psv",
+      "physionet_id": "p000802",
+      "split_role": "test (held out from training and threshold selection), set A",
+      "category": "no_sepsis_false_alarm",
+      "n_hours": 55,
+      "sepsis_onset_hour": null,
+      "first_alert_hour": 53.0,
+      "hours_alert_before_onset": null,
+      "alert_episodes": 1,
+      "peak_model_score": 0.1299,
+      "note": "No sepsis. Model raises an alert anyway. Keep this one: it shows a false alarm."
+    }
+  ]
+}

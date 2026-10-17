@@ -1,0 +1,88 @@
+/* Shared presentation scale. Layout, spacing, and clinical colors stay in their existing stylesheets. */
+:root {
+  --font-page: 32px;
+  --font-section: 24px;
+  --font-subhead: 20px;
+  --font-body: 16px;
+  --font-caption: 14px;
+  --font-metric: 40px;
+  --radius-surface: 24px;
+  --radius-inset: 16px;
+  --radius-control: 14px;
+  --radius-pill: 9999px;
+  --mc-shadow: 0 10px 30px rgb(15 23 42 / 5%), 0 2px 6px rgb(15 23 42 / 2%);
+  --mc-shadow-raised: 0 16px 40px rgb(15 23 42 / 7%), 0 3px 10px rgb(15 23 42 / 3%);
+}
+
+/* Equal roles use equal sizes across ward, patient, sepsis, alert, and family views. */
+.stat-main,.vital-card>strong,.history-value,.metric-current>strong,.aw-summary dd {
+  font-size: var(--font-metric);
+}
+.stat-label,.vital-card>div,.focus-bar strong {
+  font-size: var(--font-subhead);
+}
+.badge,.neutral-chip,.stat-tag,.arc-status,.sr-band {
+  font-size: var(--font-body);
+}
+.button,.button.tiny,.heading-actions .button,.text-link,.nav-item,.patient-tabs button,
+.aw-toolbar button,.history-view-tabs button,.field-label,.sheet-body .field-label {
+  font-size: var(--font-body);
+}
+
+/* Soft outer surfaces, rounded insets, and pill-shaped navigation from the reference. */
+.panel,.stat-card,.vital-card,.handover-callout {
+  border-radius: var(--radius-surface);
+  box-shadow: var(--mc-shadow);
+}
+.stat-card:hover,.vital-card:hover {
+  box-shadow: var(--mc-shadow-raised);
+}
+.vital-card.selected {
+  border-radius: var(--radius-surface);
+  box-shadow: var(--mc-shadow);
+}
+.workspace-selector,.notice,.small-notice,.sheet-body>.notice,.focus-bar,
+.sr-alert-review,.sr-empty,.sr-data-note,.arc-details>div,.lab-result-list>div,
+.chat-message,.chat-message.user,.chat-message.system,.prompt-list>button,.login-error,
+.focus-options>button,.login-account-types>button {
+  border-radius: var(--radius-inset);
+}
+.button,.icon-button,.search-box,.text-input,.text-area,.handover-editor,
+.sheet-body .text-input,.sheet-body .text-area,.chat-composer>textarea,select,
+.arc-status-control select,.sr-actions .button {
+  border-radius: var(--radius-control);
+}
+.nav-item,.filter-tabs>button,.aw-toolbar button,.patient-tabs button,.history-view-tabs,
+.history-view-tabs button,.badge,.neutral-chip,.example-pill,.stat-tag,.arc-status,
+.arc-example,.sr-band {
+  border-radius: var(--radius-pill);
+}
+.sheet {
+  border-radius: var(--radius-surface) 0 0 var(--radius-surface);
+  box-shadow: -12px 0 48px rgb(15 23 42 / 10%);
+}
+.toast {
+  border-radius: var(--radius-inset);
+  box-shadow: var(--mc-shadow-raised);
+}
+.recharts-default-tooltip {
+  border-radius: var(--radius-control) !important;
+  box-shadow: var(--mc-shadow-raised);
+}
+
+/* Text labels already describe these states; decorative dots add no information. */
+.nav-active-dot,.live-dot,.connection-dot,.example-dot,.heading-dot,
+.badge>i,.arc-status>i,.vital-dot {
+  display: none;
+}
+
+/* Flat navigation. Keep keyboard focus indicators and chart legend markers. */
+.patient-tabs button,.patient-tabs button.active {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.nav-item:not(:focus-visible),.patient-tabs button:not(:focus-visible),
+.history-view-tabs button:not(:focus-visible),.aw-toolbar button:not(:focus-visible) {
+  box-shadow: none;
+}
