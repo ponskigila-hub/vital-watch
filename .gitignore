@@ -3,3 +3,4 @@ data/
 vital-env/
 __pycache__/
 .ipynb_checkpoints/
+models/*.pkl
