@@ -1,6 +1,6 @@
-# Public demo recording
+# Demo recording
 
-`p000001.psv` is the user-supplied example from **Early Prediction of Sepsis from Clinical Data: The PhysioNet/Computing in Cardiology Challenge 2019**, version 1.0.0. The recording is included unchanged. The frontend excludes `SepsisLabel` when parsing it and adds separately labelled fictional identities and clinical context.
+`p000001.psv` is the user-supplied example from **Early Prediction of Sepsis from Clinical Data: The PhysioNet/Computing in Cardiology Challenge 2019**, version 1.0.0. The recording is included unchanged. The backend excludes `SepsisLabel` when parsing it and adds separately labelled fictional identities and clinical context. The raw recording is not served as a public frontend asset.
 
 Dataset authors: Matthew Reyna, Chris Josef, Russell Jeter, Supreeth Shashikumar, Benjamin Moody, M. Brandon Westover, Ashish Sharma, Shamim Nemati, and Gari D. Clifford.
 

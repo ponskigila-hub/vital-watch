@@ -1,41 +1,19 @@
 # VitalWatch frontend
 
-A local, interactive clinical workspace built with React, TypeScript, Vite, Recharts, Lucide, and GSAP. Geist fonts are bundled locally.
-
-## Run
+React, TypeScript, Vite, Recharts, Lucide, and GSAP clinical workspace with locally bundled Geist fonts. This frontend connects to the authenticated FastAPI backend; follow the [repository setup guide](../README.md) to start both services and obtain the generated demo sign-in details.
 
 ```sh
-cd frontend
 npm install
 npm run dev
+npm run build
 ```
 
-Open the URL printed by Vite. `npm run build` performs TypeScript checking and creates a production build. `npm run preview` serves that build locally.
+Vite proxies `/api` to `http://127.0.0.1:8000`. For a production preview, build this frontend and run the backend, which serves the build and API together. Vite's standalone preview command does not provide the backend proxy.
 
-## Included
+The clinical workspace includes patient search, all six primary vital histories, DBP/EtCO2 and 26 additional measurement fields, missing-data states, shared replay, notes, manual monitoring focus and review priority, example alerts, structured handovers, approved family updates, and PSV import. Care records and imports persist on the server. Editable handover changes must be saved explicitly.
 
-- Ward overview, patient search and priority filters.
-- Patient history for all six main vitals together, expandable individual charts, six-hour comparisons per measurement, and an inspectable hourly data table.
-- Additional DBP/EtCO2 history and a selector covering all 26 laboratory/recorded-measurement fields, with explicit no-data states.
-- A measurement selector for all six main trends in the family preview.
-- Hourly replay with pause, seek, speed selection, and a new-session control.
-- Example alert acknowledgement, status updates, clinical priority overrides with reasons, notes, and an event timeline.
-- Free-text monitoring focus. Respiratory and cardiovascular presets emphasize oxygen saturation and systolic pressure respectively; unsupported focuses remain labels without automated medical guidance.
-- Structured editable handovers and text export.
-- Explicit approval and withdrawal of updates in a restricted-content family **view preview**.
-- Patient chat interface with labelled example conversations and an explicit disconnected state.
-- PSV import, connection settings, keyboard-accessible drawers, and reduced-motion support.
+Family accounts have a separate, server-authorized view containing only assigned patients' heart rate, oxygen saturation, systolic pressure, observation hours, and approved updates. Clinical-only controls and records are excluded from their API responses.
 
-## Data and limitations
+The sepsis predictor, baseline detector, and Gemini are disconnected. Example scores, alerts, and conversations are visibly labelled. See the [integration templates](../api/INTEGRATIONS.md) for the future provider contracts. No API key is required for the current app, and no patient content is sent to a model service.
 
-The bundled `public/data/p000001.psv` is the example PhysioNet Challenge 2019 recording supplied by the user. The label column is excluded by the frontend parser. The other five initial patients use deterministic synthetic readings. All names, identities, known conditions, and medications are fictional.
-
-Source and dataset terms: https://physionet.org/content/challenge-2019/1.0.0/
-
-Scores and alerts are fixed **example outputs**, not computed from patient data. Disable them under Settings to inspect the disconnected state. This frontend provides no medical predictions or treatment recommendations.
-
-Notes, overrides, focuses, drafts, chat messages, and approved updates persist in this browser's local storage. Imported recordings remain in memory for the visit. Original measurement times and missing values are preserved; history stops at the replay hour. Draft handovers are editable snapshots and can be regenerated after playback advances.
-
-This pass intentionally has no backend, secure login, Gemini calls, trained detector, or LinuxONE deployment. The family screen is a role preview, not an authorization boundary. No API key is needed. No patient content is sent to an AI service.
-
-For the later backend, replace the local `data.ts` reading helpers and the care-state operations in `App.tsx` with API calls. Keep real predictions separate from clinician priority overrides and maintain explicit unavailable/insufficient-history states.
+The PhysioNet sample and its attribution are private backend assets under `api/demo/`. All demo identities and clinical profiles are fictional; the remaining five seeded streams are synthetic. Source labels distinguish recorded and synthetic readings. The clinical parser excludes outcome labels, and history is limited to the shared replay hour.

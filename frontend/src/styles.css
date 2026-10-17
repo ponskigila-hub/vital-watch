@@ -202,3 +202,36 @@ h1,h2,.patient-identity h1,.family-intro h2{color:var(--ink-strong)}
 .replay-controls input[type=range]{accent-color:#3e7042}
 .replay-mode .example-dot{width:7px;height:7px}
 .toast{color:#294f32;border-color:#a9c298}
+
+/* Signed-in workspaces use server-authorized views and explicit draft saves. */
+.login-screen{min-height:100vh;display:grid;grid-template-columns:1.1fr 1fr;background:#f6f8f3}
+.login-story{padding:70px clamp(32px,6vw,100px);background:#e6efdc;display:flex;flex-direction:column;justify-content:center;border-right:1px solid #cfddc2}
+.login-brand{display:flex;align-items:center;gap:10px;font-size:32px;font-weight:600;color:#244c32;letter-spacing:-1.4px;margin-bottom:80px}
+.login-story h1{font-size:clamp(32px,3.8vw,52px);line-height:1.2;letter-spacing:-1.8px;margin:20px 0}
+.login-story>p{font-size:18px;color:#4e6548;max-width:440px;line-height:1.8}
+.login-trust{display:flex;align-items:flex-start;gap:14px;max-width:440px;margin-top:50px;font-size:16px;line-height:1.8;color:#42603d}
+.login-trust svg{flex-shrink:0;margin-top:4px}
+.login-card{width:min(480px,100%);align-self:center;justify-self:center;padding:60px 35px}
+.login-card h2{font-size:38px;color:#213c2a;letter-spacing:-1.4px;margin:14px 0}
+.login-card>p{font-size:17px;line-height:1.8;color:#53674d}
+.login-account-types{display:flex;gap:10px;margin:28px 0}
+.login-account-types>button{display:flex;align-items:center;justify-content:center;gap:9px;background:#fff;border:1px solid #d5e0cc;border-radius:7px;padding:13px 16px;font-size:16px;flex:1;color:#567249}
+.login-account-types>button.active{background:#e6efdc;border-color:#8fac7b;color:#2f5637;font-weight:500}
+.login-card .text-input{min-height:49px;font-size:17px;background:white}
+.login-card form>.button{margin-top:26px;min-height:49px;font-size:17px}
+.login-card>.login-footnote{font-size:14px;margin-top:24px;line-height:1.9;color:#65785d}
+.login-error{padding:12px 15px;color:#9a2f27;background:#ffefed;border:1px solid #e5b4ae;border-radius:6px;margin-top:18px;font-size:16px;line-height:1.7}
+.connection-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:22px;padding:35px;text-align:center;color:#315b3b}
+.connection-screen h1{font-size:30px;letter-spacing:-1px;max-width:600px}
+.connection-screen p{font-size:17px;color:#53674d;max-width:550px}
+.draft-status{display:flex;flex-wrap:wrap;gap:12px;margin:17px 0;color:#536c4b;font-size:15px;line-height:1.7}
+.draft-status strong{color:#86570c;background:#fff2d3;padding:0 8px;border-radius:4px;font-weight:500}
+.editor-actions+.text-link{display:block;margin:15px 0}
+.family-status-bar{justify-content:flex-start;color:#3c613c;gap:13px;font-size:15px}
+.family-status-bar>span:last-child{margin-left:auto}
+.chat-message.system{background:#f3f6ef;border-style:dashed}
+.notice.error-notice{align-items:center;flex-wrap:wrap}
+.notice.error-notice>.text-link{margin-left:auto}
+.sidebar-bottom{flex-shrink:0}
+@media(max-width:900px){.login-screen{grid-template-columns:1fr}.login-story{padding:32px;border-right:0;border-bottom:1px solid #cfddc2}.login-brand{margin-bottom:28px;font-size:29px}.login-story h1{font-size:35px;max-width:600px}.login-story>p{max-width:600px}.login-trust{display:none}.login-card{padding:35px 26px 55px;max-width:500px;width:100%}.login-card h2{font-size:34px}.family-status-bar{font-size:14px}.family-status-bar>span:last-child{max-width:150px}}
+@media(max-width:450px){.login-story{padding:26px}.login-story h1{font-size:30px}.login-story>p{font-size:16px}.login-card{padding-left:22px;padding-right:22px}.family-status-bar{font-size:12px;gap:8px}.family-status-bar>span:last-child{max-width:100px}.draft-status{font-size:15px}}
