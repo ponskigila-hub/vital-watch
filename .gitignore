@@ -1,6 +1,26 @@
+# Dataset
 data/
-*.pem
+
+# Python environments
+.venv/
+venv/
 vital-env/
+
+# Python cache
 __pycache__/
+*.py[cod]
 .ipynb_checkpoints/
+
+# Trained models
 models/*.pkl
+models/*.joblib
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Editor and OS
+.vscode/
+.DS_Store
+Thumbs.db
