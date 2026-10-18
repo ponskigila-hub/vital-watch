@@ -128,18 +128,35 @@ Captured **18 October 2026, 12:55 UTC** directly over SSH to the supplied LinuxO
 
 Inspect the [raw SSH/HTTP verification](docs/evidence/linuxone-verification.json), [readable host report](docs/evidence/linuxone-host.txt), [health response](docs/evidence/api-health.json), [readiness response](docs/evidence/api-ready.json), and [metrics response](docs/evidence/api-metrics.json). The reports contain no credentials, cookies, private configuration, or patient records.
 
-**Actual hosted dashboard:** captured after signing into [the LinuxONE demo](http://148.100.108.67:8000/), using its replayed records and fictional display identities.
+**1. LinuxONE host and running service**
 
-![VitalWatch dashboard served from the LinuxONE VM](docs/evidence/linuxone-app.png)
+The original `linuxone-container.png` filename is retained for the evidence layout. This capture shows the SSH-collected host/service report for the direct Python deployment; it is not evidence of a running container.
 
-<details>
-<summary>Live metrics response screenshot</summary>
+![LinuxONE s390x host and running Uvicorn service report](docs/evidence/linuxone-container.png)
+
+**2. Health response**
+
+![VitalWatch health response from LinuxONE](docs/evidence/linuxone-health.png)
+
+**3. Database readiness**
+
+![VitalWatch database readiness response from LinuxONE](docs/evidence/linuxone-ready.png)
+
+**4. Runtime metrics**
 
 ![Actual metrics response from the LinuxONE-hosted service](docs/evidence/linuxone-metrics.png)
 
-</details>
+**5. Hosted application**
 
-The screenshots were collected shortly after the raw SSH report, so live counters differ. `inference_latency_ms` was `null` in this capture; no inference-latency benchmark, accelerator use, or container execution is claimed. The host report and endpoint responses establish the observed service state, not clinical effectiveness. See [evidence provenance](docs/evidence/README.md).
+Captured after signing into [the LinuxONE demo](http://148.100.108.67:8000/), using replayed records and fictional display identities.
+
+![VitalWatch dashboard served from LinuxONE](docs/evidence/linuxone-app.png)
+
+**6. Model connection status**
+
+![LightGBM CPU inference and service connections in the hosted application](docs/evidence/linuxone-model.png)
+
+The browser screenshots were collected separately from the raw SSH report, so live counters differ. `inference_latency_ms` was `null` in the metrics capture; no inference-latency benchmark, accelerator use, or container execution is claimed. These captures establish the observed service state, not clinical effectiveness. See [evidence provenance](docs/evidence/README.md).
 
 ### Repeat the host checks
 
