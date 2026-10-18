@@ -1,0 +1,36 @@
+digraph VitalWatch {
+  graph [rankdir=TB, bgcolor="#f8fbff", pad="0.45", nodesep="0.55", ranksep="0.68", splines=polyline, outputorder=edgesfirst, fontname="Helvetica", label="VITALWATCH  /  APPLICATION WORKFLOW\nRecorded data → reviewable signal → clinician-led follow-up", labelloc=t, fontsize=26, fontcolor="#10263c"];
+  node [shape=box, style="rounded,filled", fillcolor="#edf6ff", color="#8cacc5", penwidth=1.3, fontname="Helvetica", fontsize=17, fontcolor="#10263c", margin="0.24,0.18", width=4.7];
+  edge [color="#68879f", penwidth=1.5, arrowsize=0.8, fontname="Helvetica", fontsize=13, fontcolor="#405b71"];
+
+  data [label="01  RECORDINGS\nPhysioNet PSV files or validated imports"];
+  replay [label="02  HOURLY REPLAY\nFastAPI reveals observations through the selected hour\nMissing values and original observation times stay visible"];
+  model [label="03  SEPSIS MODEL\nShared 127-feature preprocessing\nLightGBM v1 inference on the backend CPU"];
+  signal [label="04  SCORE AND ALERTS\nSave score history; alert on an upward threshold crossing\nConfigured 5% validation operating policy"];
+  dashboard [label="05  CLINICIAN DASHBOARD\nVitals, labs, history, reliability and review checkpoints\nScores support review; they are not diagnoses", fillcolor="#e3f2ff", color="#1684bd", penwidth=1.8];
+  review [label="06  CLINICIAN REVIEW\nAcknowledge the alert and take ownership\nAssess supporting evidence and set review priority", fillcolor="#e3f2ff", color="#1684bd"];
+  followup [label="07  FOLLOW-UP\nSchedule reassessment by patient hour\nTrack due / overdue work; explicitly record completion", fillcolor="#e3f2ff", color="#1684bd"];
+  handover [label="08  HANDOVER\nPrepare a template or optional AI draft\nClinician edits, saves and compares revisions", fillcolor="#e3f2ff", color="#1684bd"];
+  family [label="09  APPROVED FAMILY UPDATE\nClinician publishes a plain-language update\nAssigned patient / family receive a restricted view", fillcolor="#dff4ef", color="#4b9b8b"];
+  data -> replay -> model -> signal -> dashboard -> review -> followup -> handover -> family;
+
+  snapshot [label="APPROVED EVIDENCE SNAPSHOT\nRecent readings, trends, score, alerts and care actions\nNo future data, outcome labels or display identifiers", fillcolor="#f1edff", color="#a08bc9"];
+  gemini [label="OPTIONAL GEMINI ASSISTANCE\nBackground request over HTTPS\nAPI key stays in the backend", fillcolor="#f1edff", color="#a08bc9"];
+  validate [label="VALIDATED OUTPUT\nEvidence-linked suggestions and patient chat\nEditable AI handover draft", fillcolor="#f1edff", color="#a08bc9"];
+  signal -> snapshot [style=dashed, label="New alert during active replay", constraint=false];
+  dashboard -> snapshot [style=dashed, label="Manual request", constraint=false];
+  snapshot -> gemini -> validate [color="#9b87bd"];
+  validate -> review [style=dashed, color="#9b87bd", label="Clinician confirms suggestions", constraint=false];
+  validate -> handover [style=dashed, color="#9b87bd", label="Draft only", constraint=false];
+
+  db [label="SQLITE  /  SHARED PERSISTENT STATE\nReadings, scores, alerts and care actions\nReview checkpoints and handover revisions", shape=cylinder, fillcolor="#f0f4f8", color="#9db0c0"];
+  operations [label="PERFORMANCE AND OPERATIONS\nOffline model evaluation\nHealth, readiness and runtime metrics", fillcolor="#f0f4f8", color="#9db0c0"];
+  model -> operations [style=dashed, label="Observe", constraint=false];
+  {rank=same; model; operations;}
+  {rank=same; dashboard; snapshot;}
+  {rank=same; review; gemini;}
+  {rank=same; followup; validate; db;}
+
+  note [shape=plain, width=0, label="DEPLOYMENT: FastAPI + replay + LightGBM + SQLite on IBM LinuxONE; Gemini is an external service.\nCONTROL: Acknowledgement, follow-up completion and alert resolution are separate clinician actions.\nA lower score does not close an alert. If Gemini is unavailable, monitoring and template handovers continue.", fontsize=14, fontcolor="#405b71"];
+  family -> note [style=invis];
+}

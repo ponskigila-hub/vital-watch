@@ -1,0 +1,38 @@
+digraph VitalWatchArchitecture {
+  graph [rankdir=LR, bgcolor="#f8fbff", pad="0.5", nodesep="0.6", ranksep="0.85", splines=polyline, compound=true, outputorder=edgesfirst, fontname="Helvetica", label="VITALWATCH  /  SYSTEM ARCHITECTURE\nBrowser client · IBM LinuxONE application host · optional external Gemini", labelloc=t, fontsize=25, fontcolor="#10263c"];
+  node [shape=box, style="rounded,filled", fillcolor="#edf6ff", color="#8cacc5", penwidth=1.3, fontname="Helvetica", fontsize=16, fontcolor="#10263c", margin="0.22,0.19"];
+  edge [color="#68879f", penwidth=1.4, arrowsize=0.75, fontname="Helvetica", fontsize=12, fontcolor="#405b71"];
+  browser [label="BROWSER  /  REACT APPLICATION\nClinician workspace\nAssigned patient / family view", fillcolor="#e3f2ff", color="#1684bd", penwidth=1.8];
+  recordings [label="RECORDED DATA\nPhysioNet PSV files\nBundled demos or clinician imports", shape=folder, fillcolor="#f0f4f8", color="#9db0c0"];
+  {rank=same; browser; recordings;}
+  subgraph cluster_host {
+    label="IBM LinuxONE VM  /  s390x · Ubuntu"; labelloc=t; fontsize=20; fontcolor="#005280";
+    style="rounded,filled"; color="#75a9cb"; fillcolor="#eff7fd"; penwidth=1.8; margin=28;
+    subgraph cluster_process {
+      label="ONE UVICORN / FASTAPI PROCESS"; fontsize=16; fontcolor="#405b71";
+      style="rounded,dashed,filled"; color="#a1b9cc"; fillcolor="#ffffff"; penwidth=1.3; margin=22;
+      api [label="HTTP ROUTES AND CARE SERVICES\nSession cookies · CSRF · role / assignment checks\nPatients, alerts, review, handovers and family updates\n/api/health · /api/ready · /api/metrics", fillcolor="#e3f2ff", color="#1684bd", penwidth=1.8];
+      clock [label="BACKGROUND REPLAY / SCORING TASK\nShared patient-hour clock\nCutoff-bound history; rising-edge alerts"];
+      model [label="LIGHTGBM v1  /  CPU INFERENCE\nShared causal 127-feature preprocessing\nResearch score and supplied feature contributions"];
+      worker [label="BACKGROUND LANGUAGE WORKER\nApproved, cutoff-bound evidence snapshots\nValidate references and structured output\nGuidance · chat · editable handover drafts", fillcolor="#f1edff", color="#a08bc9"];
+    }
+    db [label="SQLITE  /  SQLALCHEMY\nReadings, scores, alerts and care events\nReview checkpoints, handovers and family updates\nDurable language jobs and generated results", shape=cylinder, fillcolor="#eaf4f0", color="#79a797"];
+    static [label="FRONTEND BUILD\nCompiled React / Vite assets\nServed by FastAPI", shape=folder, fillcolor="#f0f4f8", color="#9db0c0"];
+    files [label="BACKEND FILES\nModel and threshold artifacts\nDemo reference library\nPrivate environment configuration", shape=folder, fillcolor="#f0f4f8", color="#9db0c0"];
+  }
+  gemini [label="GOOGLE GEMINI API  /  EXTERNAL\nOptional language generation\nAPI key stays in the LinuxONE backend", fillcolor="#f1edff", color="#a08bc9", penwidth=1.8];
+  browser -> api [dir=both, label="HTTP :8000\nSame-origin JSON API"];
+  recordings -> api [label="Seed / validated import"];
+  static -> api [label="/ and /assets"];
+  api -> db [dir=both, label="Read / write\nQueue generation jobs"];
+  api -> clock [label="Playback controls"];
+  clock -> model [dir=both, label="History / scores"];
+  clock -> db [dir=both, label="History, scores, alerts\nand new-alert jobs"];
+  db -> worker [dir=both, label="Queued jobs\nand saved results"];
+  files -> model [style=dashed, label="Artifacts"];
+  files -> worker [style=dashed, label="References / configuration"];
+  worker -> gemini [dir=both, color="#9b87bd", label="Outbound HTTPS\nApproved evidence / JSON response"];
+  note [shape=plain, margin=0, label="CURRENT DEPLOYMENT\nDirect Python service; one process with background tasks.\nSQLite is persistent local storage on the VM.\nThe browser receives no Gemini key.\nGemini cannot change scores or resolve alerts.", fontsize=13, fontcolor="#405b71"];
+  {rank=same; recordings; note;}
+  recordings -> note [style=invis];
+}

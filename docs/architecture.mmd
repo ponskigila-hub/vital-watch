@@ -1,14 +1,34 @@
 flowchart LR
-    A[PhysioNet Challenge 2019 hourly recordings] --> B[Causal replay and validation]
-    B --> C[Missing-data and measurement availability view]
-    B --> D[Shared 127-feature preprocessing]
-    D --> E[LightGBM v1 CPU inference]
-    E --> F[5% validation operating policy<br/>threshold approx. 0.0937]
-    F --> G[Persisted scores and rising-edge alerts]
-    G --> H[FastAPI service on IBM LinuxONE]
-    H --> I[(SQLite clinical workflow data)]
-    I --> J[React VitalWatch dashboard]
-    J --> K[Alert review and patient prioritization]
-    J --> L[Successive handover comparison]
-    J --> M[Approved family updates]
-    H --> N["/api/health · /api/ready · /api/metrics"]
+    BROWSER["React application in the browser<br/>Clinician workspace or restricted family view"]
+    PSV["PhysioNet PSV recordings<br/>Bundled demos or clinician imports"]
+    subgraph HOST["IBM LinuxONE VM · s390x · Ubuntu"]
+        subgraph PROCESS["One Uvicorn / FastAPI process"]
+            API["HTTP routes and care services<br/>Sessions, CSRF and role/assignment checks"]
+            CLOCK["Background replay/scoring task<br/>Shared patient-hour clock and cutoff enforcement"]
+            MODEL["LightGBM v1 CPU inference<br/>Shared causal 127-feature preprocessing"]
+            WORKER["Background language worker<br/>Approved snapshots and output validation"]
+        end
+        DB[("SQLite via SQLAlchemy<br/>Readings, results, care records and language jobs")]
+        STATIC["Compiled React / Vite assets"]
+        FILES["Model and threshold artifacts<br/>Demo references and private backend configuration"]
+    end
+    GEMINI["External Google Gemini API<br/>Optional language generation"]
+    BROWSER <-->|"HTTP :8000 · same-origin JSON API"| API
+    PSV -->|"Seed / validated import"| API
+    STATIC -->|"Serve / and /assets"| API
+    API <-->|"Read / write; queue generation jobs"| DB
+    API -->|"Playback controls"| CLOCK
+    CLOCK <-->|"Patient history / scores"| MODEL
+    CLOCK <-->|"History, scores, alerts and queued jobs"| DB
+    DB <-->|"Durable queued jobs and results"| WORKER
+    FILES -.-> MODEL
+    FILES -.-> WORKER
+    WORKER <-->|"Outbound HTTPS: approved evidence / structured response"| GEMINI
+    classDef ui fill:#e3f2ff,stroke:#1684bd,color:#10263c;
+    classDef core fill:#edf6ff,stroke:#8cacc5,color:#10263c;
+    classDef ai fill:#f1edff,stroke:#a08bc9,color:#2c2547;
+    classDef data fill:#f0f4f8,stroke:#9db0c0,color:#334155;
+    class BROWSER ui;
+    class API,CLOCK,MODEL core;
+    class WORKER,GEMINI ai;
+    class DB,PSV,STATIC,FILES data;

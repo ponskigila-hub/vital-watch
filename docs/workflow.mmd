@@ -1,0 +1,37 @@
+flowchart TB
+    DATA[PhysioNet PSV recordings or validated imports]
+    REPLAY[FastAPI hourly replay<br/>Only observations through the selected hour]
+    MODEL[Shared 127-feature preprocessing<br/>LightGBM v1 CPU inference]
+    SIGNAL[Save score history<br/>Raise an alert on an upward threshold crossing]
+    DASH[Clinician dashboard<br/>Vitals, labs, history, reliability and review checkpoints]
+    REVIEW[Clinician reviews evidence<br/>Acknowledge, take ownership and set review priority]
+    FOLLOW[Schedule reassessment<br/>Track due or overdue work; record completion]
+    HANDOVER[Prepare and edit handover<br/>Save draft and compare revisions]
+    FAMILY[Clinician publishes an approved update<br/>Assigned patient and family see their restricted view]
+
+    DATA --> REPLAY --> MODEL --> SIGNAL --> DASH --> REVIEW --> FOLLOW --> HANDOVER --> FAMILY
+
+    SNAPSHOT[Approved evidence snapshot<br/>Cutoff-bound readings, trends, score, alerts and care actions]
+    GEMINI[Optional Gemini request over HTTPS<br/>Backend key; background generation worker]
+    VALIDATE[Validate evidence and reference IDs<br/>Guidance, patient chat and editable AI draft]
+    SIGNAL -. New alert during active replay .-> SNAPSHOT
+    DASH -. Manual guidance, chat or AI handover .-> SNAPSHOT
+    SNAPSHOT --> GEMINI --> VALIDATE
+    VALIDATE -. Suggestions need clinician acceptance .-> REVIEW
+    VALIDATE -. AI handover draft .-> HANDOVER
+
+    DB[(SQLite on LinuxONE<br/>Readings, scores, alerts, care events, review checkpoints and drafts)]
+    REPLAY -. Persisted state .-> DB
+    FOLLOW -. Audited actions .-> DB
+    HANDOVER -. Saved revisions .-> DB
+    OPS[Performance and operations<br/>Offline evaluation; health, readiness and runtime metrics]
+    DASH -. Inspect .-> OPS
+
+    classDef source fill:#edf6ff,stroke:#7fa9c9,color:#10263c;
+    classDef clinical fill:#e8f4ff,stroke:#1684bd,color:#10263c;
+    classDef ai fill:#f1edff,stroke:#a08bc9,color:#2c2547;
+    classDef storage fill:#f4f7fa,stroke:#a4b5c4,color:#334155;
+    class DATA,REPLAY,MODEL,SIGNAL source;
+    class DASH,REVIEW,FOLLOW,HANDOVER,FAMILY clinical;
+    class SNAPSHOT,GEMINI,VALIDATE ai;
+    class DB,OPS storage;

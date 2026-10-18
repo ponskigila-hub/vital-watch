@@ -48,6 +48,16 @@ flowchart LR
 
 The model is only one part of the system. The workflow around it makes the result reviewable: a new threshold crossing creates an alert, unresolved alerts influence patient ordering, missing measurements receive a reliability summary, and successive handover revisions show newly added information.
 
+See the [complete application workflow](docs/workflow.md), with a shareable [PNG](docs/workflow.png), [SVG](docs/workflow.svg), and [editable Mermaid source](docs/workflow.mmd).
+
+### System architecture
+
+The React client connects to FastAPI on IBM LinuxONE. One backend process runs the replay/scoring task, LightGBM CPU inference, and the language worker, with persistent SQLite storage. Optional Gemini requests leave the backend over HTTPS; API keys remain on the server.
+
+![VitalWatch system architecture: browser, LinuxONE backend, SQLite, LightGBM and external Gemini](docs/architecture.png)
+
+[Architecture details](docs/architecture.md) · [SVG](docs/architecture.svg) · [Editable Mermaid](docs/architecture.mmd)
+
 ## Key features
 
 - Ward overview with patient search, model-band filters, current readings, and trend summaries.
