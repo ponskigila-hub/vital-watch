@@ -1,0 +1,63 @@
+{
+  "captured_at_utc": "2026-10-18T12:55:38.853787+00:00",
+  "collection_method": "SSH to the supplied IBM LinuxONE VM; HTTP requests executed on that same host",
+  "host": {
+    "architecture": "s390x",
+    "kernel": "Linux 6.8.0-147-generic",
+    "operating_system": "Ubuntu 24.04.5 LTS",
+    "logical_cpus": 3
+  },
+  "source_commit": "4b0d7a3eadeb539e66b3b67dc0ee7b97aaf787d6",
+  "service": {
+    "listener": "State  Recv-Q Send-Q Local Address:Port Peer Address:PortProcess\nLISTEN 0      2048         0.0.0.0:8000      0.0.0.0:*    users:((\"python\",pid=42182,fd=16))",
+    "process_command": ".venv/bin/python -m uvicorn api.app.main:app --host 0.0.0.0 --port 8000",
+    "container_runtime_installed": {
+      "podman": false,
+      "docker": false
+    }
+  },
+  "endpoints": {
+    "/api/health": {
+      "http_status": 200,
+      "body": {
+        "status": "ok",
+        "service": "VitalWatch",
+        "version": "1.0.0"
+      }
+    },
+    "/api/ready": {
+      "http_status": 200,
+      "body": {
+        "status": "ready"
+      }
+    },
+    "/api/metrics": {
+      "http_status": 200,
+      "body": {
+        "service": "VitalWatch",
+        "uptime_seconds": 1108.6,
+        "request_count": 602,
+        "last_request_latency_ms": 0.46,
+        "inference_latency_ms": null,
+        "database": "ready",
+        "prediction": {
+          "provider": "lightgbm",
+          "status": "connected",
+          "model_version": "v1",
+          "feature_version": "v1",
+          "model_key": "v1-4ae7b0dfe3674c794e4f6d6c",
+          "alert_policy": "5pct_false_alert_patients",
+          "alert_threshold": 0.09369306785703713,
+          "reason": null,
+          "runtime": "CPU \u00b7 one inference thread",
+          "limitations": [
+            "Uncalibrated research model score, not a probability of diagnosis or a treatment recommendation.",
+            "Alert thresholds were selected on the trainer's validation set; they do not guarantee the same false-alert rate for these patients.",
+            "Personal-baseline detector and language model are not connected. Synthetic streams are interface demonstrations, not validation data."
+          ]
+        },
+        "measured_on_host": "application runtime; LinuxONE evidence requires deployment capture"
+      }
+    }
+  }
+}

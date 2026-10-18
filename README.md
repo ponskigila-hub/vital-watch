@@ -94,11 +94,11 @@ The application uses the stricter validation policy named `5pct_false_alert_pati
 
 ## IBM LinuxONE deployment
 
-VitalWatch is designed to run as a containerized FastAPI service with the React frontend served by the backend. The application, SQLite workflow store, LightGBM model, replay worker, and operational endpoints can run inside the LinuxONE environment.
+VitalWatch is running on the supplied IBM LinuxONE VM as a **Uvicorn/FastAPI Python process**, serving the React frontend, SQLite workflow store, LightGBM model, replay worker, and operational endpoints. SSH inspection confirmed **s390x** architecture. Container configuration is included in the repository, but the captured deployment is **not containerized**; neither Docker nor Podman was installed in the inspected host's PATH.
 
 The repository includes:
 
-- `Dockerfile` — multi-stage frontend build and Python runtime image;
+- `Dockerfile.vm` — supplied container build recipe, separate from the captured Python-process deployment;
 
 - `compose.yml` — Docker Compose / Podman Compose service definition;
 
@@ -110,57 +110,53 @@ The repository includes:
 
 - `/api/metrics` — process uptime, request count, latest request latency, inference latency, database state, and prediction-provider status.
 
-### LinuxONE evidence placeholder
+### Verified LinuxONE deployment evidence
 
-Add screenshots or exported terminal captures to the repository before submission. Suggested locations:
+Captured **18 October 2026, 12:55 UTC** directly over SSH to the supplied LinuxONE VM. The HTTP checks below ran on that same host. Its deployed checkout at capture was `4b0d7a3`; these are recorded observations, not continuously updated status badges.
 
-```
-docs/evidence/linuxone-container.png
-docs/evidence/linuxone-health.png
-docs/evidence/linuxone-ready.png
-docs/evidence/linuxone-metrics.png
-docs/evidence/linuxone-app.png
-docs/evidence/linuxone-model.png
-```
+| Check | Observed result |
+| --- | --- |
+| Architecture / OS | `s390x` / Ubuntu 24.04.5 LTS |
+| Kernel / logical CPUs | Linux 6.8.0-147-generic / 3 |
+| Running service | `.venv/bin/python -m uvicorn api.app.main:app --host 0.0.0.0 --port 8000` |
+| Port listener | Python process listening on port 8000 |
+| `/api/health` | HTTP 200; VitalWatch `status: ok` |
+| `/api/ready` | HTTP 200; `status: ready` |
+| `/api/metrics` | HTTP 200; database ready; LightGBM v1 connected |
+| Process uptime / request count | 1,108.6 seconds / 602 requests at collection |
+| Model runtime / policy | CPU, one inference thread / `5pct_false_alert_patients` |
 
-After adding the evidence files, replace the placeholders below with the actual images:
+Inspect the [raw SSH/HTTP verification](docs/evidence/linuxone-verification.json), [readable host report](docs/evidence/linuxone-host.txt), [health response](docs/evidence/api-health.json), [readiness response](docs/evidence/api-ready.json), and [metrics response](docs/evidence/api-metrics.json). The reports contain no credentials, cookies, private configuration, or patient records.
 
-```
-![VitalWatch container running on LinuxONE](docs/evidence/linuxone-container.png)
-![VitalWatch health response on LinuxONE](docs/evidence/linuxone-health.png)
-![VitalWatch metrics response on LinuxONE](docs/evidence/linuxone-metrics.png)
-![VitalWatch dashboard served from LinuxONE](docs/evidence/linuxone-app.png)
-```
+**Actual hosted dashboard:** captured after signing into [the LinuxONE demo](http://148.100.108.67:8000/), using its replayed records and fictional display identities.
 
-### Commands to capture LinuxONE evidence
+![VitalWatch dashboard served from the LinuxONE VM](docs/evidence/linuxone-app.png)
 
-Run these commands on the LinuxONE host. Replace the image/host placeholder values with the actual deployment values. Do not include passwords, API keys, cookies, private IPs that should not be public, or database contents in screenshots.
+<details>
+<summary>Live metrics response screenshot</summary>
+
+![Actual metrics response from the LinuxONE-hosted service](docs/evidence/linuxone-metrics.png)
+
+</details>
+
+The screenshots were collected shortly after the raw SSH report, so live counters differ. `inference_latency_ms` was `null` in this capture; no inference-latency benchmark, accelerator use, or container execution is claimed. The host report and endpoint responses establish the observed service state, not clinical effectiveness. See [evidence provenance](docs/evidence/README.md).
+
+### Repeat the host checks
+
+Run on the LinuxONE VM; these commands do not expose application secrets:
 
 ```bash
-# 1. Confirm the container is running.
-podman ps --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}'
-# Use `docker ps` instead if Docker is the runtime.
-
-# 2. Set the deployed base URL.
-export VITALWATCH_URL="http://<LINUXONE_HOST>:8000"
-
-# 3. Capture basic health and database readiness.
-curl -i "$VITALWATCH_URL/api/health" | tee docs/evidence/api-health.txt
-curl -i "$VITALWATCH_URL/api/ready" | tee docs/evidence/api-ready.txt
-
-# 4. Capture measured runtime information.
-curl -sS "$VITALWATCH_URL/api/metrics" | tee docs/evidence/api-metrics.json
-
-# 5. Capture the container logs without secrets.
-podman logs --tail 120 vitalwatch | tee docs/evidence/linuxone-container.log
-# Use `docker logs --tail 120 vitalwatch` if Docker is the runtime.
-
-# 6. Confirm the deployed frontend and API are reachable.
-curl -I "$VITALWATCH_URL/"
-curl -I "$VITALWATCH_URL/api/docs"
+cd ~/vital-watch
+uname -m
+uname -sr
+ss -ltnp 'sport = :8000'
+git rev-parse HEAD
+curl -fsS http://127.0.0.1:8000/api/health
+curl -fsS http://127.0.0.1:8000/api/ready
+curl -fsS http://127.0.0.1:8000/api/metrics
 ```
 
-For the final video, show the terminal, the running container, the model-loaded state, the dashboard URL, and one alert threshold crossing. The `/api/metrics` output should be captured after the application has processed representative requests so that request and inference latency fields are populated.
+For the final video, show the LinuxONE host checks, running Python service, connected model, hosted dashboard, and a recorded alert threshold crossing. Only show a container if a container deployment is actually running and has been verified.
 
 ## Final submission guide
 
@@ -181,13 +177,11 @@ curl -sS "$VITALWATCH_URL/api/ready" | tee docs/evidence/api-ready.json
 curl -sS "$VITALWATCH_URL/api/metrics" | tee docs/evidence/api-metrics.json
 tmux ls | tee docs/evidence/linuxone-tmux.txt
 tail -80 ~/vitalwatch.log | tee docs/evidence/linuxone-log.txt
-podman ps --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}' | tee docs/evidence/linuxone-containers.txt
-podman logs --tail 120 vitalwatch | tee docs/evidence/linuxone-container.log
 ```
 
-If Docker is used instead of Podman, replace `podman` with `docker`. Add screenshots under `docs/evidence/` for the running container, health/readiness responses, metrics response, model status, and dashboard. Do not commit passwords, API keys, cookies, `.demo-credentials.json`, database files, or unredacted private configuration.
+Host verification, health/readiness, metrics, and dashboard evidence are already checked in under `docs/evidence/`. Refresh the captures if the deployment changes. Container evidence remains separate work because the captured app runs directly in Python. Do not commit passwords, API keys, cookies, `.demo-credentials.json`, database files, or unredacted private configuration.
 
-Before submitting, replace `[TEAM NAME]`, complete the team-contribution table, add the final video URL, add the LinuxONE evidence images, and replace the project license placeholder. A suggested link block is:
+Before submitting, replace `[TEAM NAME]`, complete the team-contribution table, add the final video URL, and replace the project license placeholder. A suggested link block is:
 
 ```
 ## Submission links
@@ -371,7 +365,7 @@ The current local verification results are:
 
 - repository whitespace check passed.
 
-The final submission should add the LinuxONE host evidence and repeat the health, readiness, and metrics checks on the deployed instance.
+LinuxONE host evidence, health/readiness responses, runtime metrics, and actual hosted-app screenshots are linked in the verified deployment section above. Repeat those checks if the deployment changes.
 
 ## Team contributions
 
