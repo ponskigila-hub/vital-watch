@@ -160,7 +160,7 @@ def patient_out(db, patient, replay, rows=None):
 
 
 def handover_out(h):
-    return {"id": h.id, "patientId": h.patient_id, "session": h.replay_id, "hour": h.hour, "text": h.text, "revision": h.revision, "origin": h.origin, "generation_id": h.generation_id}
+    return {"id": h.id, "patientId": h.patient_id, "session": h.replay_id, "hour": h.hour, "text": h.text, "revision": h.revision, "origin": h.origin, "generation_id": h.generation_id, "createdAt": datetime.datetime.fromtimestamp(h.created, datetime.timezone.utc).isoformat()}
 
 
 def update_out(db, update):
@@ -172,9 +172,11 @@ def workspace(db, replay, user):
     patients = list(db.scalars(select(Patient).order_by(Patient.bed).limit(100)))
     events = events_for(db, replay)
     focuses, priorities = care_maps(events)
-    drafts, draft_meta = {}, {}
-    for h in db.scalars(select(Handover).where(Handover.replay_id == replay.id, Handover.hour <= replay.hour).order_by(Handover.created.desc(), Handover.id.desc())):
+    drafts, draft_meta, handover_history = {}, {}, {}
+    handovers = db.scalars(select(Handover).where(Handover.replay_id == replay.id, Handover.hour <= replay.hour).order_by(Handover.created.desc(), Handover.id.desc()))
+    for h in handovers:
         key = f"{replay.id}:{h.patient_id}"
+        handover_history.setdefault(h.patient_id, []).append(handover_out(h))
         if key not in drafts:
             drafts[key] = h.text
             draft_meta[key] = handover_out(h)
@@ -182,7 +184,7 @@ def workspace(db, replay, user):
     for m in db.scalars(select(Message).where(Message.replay_id == replay.id, Message.user_id == user.id, Message.hour <= replay.hour).order_by(Message.created, Message.id)):
         messages.setdefault(f"{replay.id}:{m.patient_id}", []).append({"role": m.role, "text": m.text, "origin": m.origin, "hour": m.hour, "evidence": m.data})
     updates = [update_out(db, u) for u in db.scalars(select(FamilyUpdate).where(FamilyUpdate.replay_id == replay.id, FamilyUpdate.hour <= replay.hour, FamilyUpdate.withdrawn_at.is_(None)).order_by(FamilyUpdate.approved_at.desc()))]
-    return {"integrations": integration_status(db), "replay": replay_out(db, replay), "patients": [patient_out(db, p, replay) for p in patients], "patient_count": db.scalar(select(func.count()).select_from(Patient)), "alerts": alerts_for(db, replay), "care": {"events": [event_out(db, e) for e in events], "focuses": focuses, "priorities": priorities, "drafts": drafts, "updates": updates, "messages": messages}, "draft_meta": draft_meta, "language_jobs": [{"id": j.id, "patient_id": j.patient_id, "operation": j.operation, "hour": j.hour, "status": j.status, "error": j.error} for j in db.scalars(select(LanguageJob).where(LanguageJob.replay_id == replay.id, LanguageJob.hour <= replay.hour, LanguageJob.actor_id == user.id).order_by(LanguageJob.created.desc()).limit(20))]}
+    return {"integrations": integration_status(db), "replay": replay_out(db, replay), "patients": [patient_out(db, p, replay) for p in patients], "patient_count": db.scalar(select(func.count()).select_from(Patient)), "alerts": alerts_for(db, replay), "care": {"events": [event_out(db, e) for e in events], "focuses": focuses, "priorities": priorities, "drafts": drafts, "updates": updates, "messages": messages}, "draft_meta": draft_meta, "handover_history": handover_history, "language_jobs": [{"id": j.id, "patient_id": j.patient_id, "operation": j.operation, "hour": j.hour, "status": j.status, "error": j.error} for j in db.scalars(select(LanguageJob).where(LanguageJob.replay_id == replay.id, LanguageJob.hour <= replay.hour, LanguageJob.actor_id == user.id).order_by(LanguageJob.created.desc()).limit(20))]}
 
 
 def structured_handover(db, patient, replay):
@@ -230,7 +232,9 @@ def score_through(db, replay, patient_id=None):
         needed = [r["ICULOS"] for r in rows if r["ICULOS"] not in existing or (existing[r["ICULOS"]].result["status"] == "unavailable" and time.time() - existing[r["ICULOS"]].created >= 30)]
         if not needed:
             continue
+        started = time.perf_counter()
         results = provider.score_recording(pid, rows, needed)
+        provider.last_inference_latency_ms = round((time.perf_counter() - started) * 1000, 2)
         title = model_alert_title(provider)
         alerted_hours = set(db.scalars(select(Alert.hour).where(Alert.replay_id == replay.id, Alert.patient_id == pid, Alert.title == title)))
         for hour in sorted(needed):

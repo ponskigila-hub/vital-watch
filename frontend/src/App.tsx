@@ -90,6 +90,7 @@ import {
   type Reading,
   type VitalKey,
 } from "./data";
+import { evaluationArtifact } from "./evaluation";
 
 type Page =
   | "overview"
@@ -97,6 +98,7 @@ type Page =
   | "patient"
   | "alerts"
   | "handover"
+  | "performance"
   | "family"
   | "settings";
 type Sheet = "chat" | "focus" | "evidence" | "note" | "priority" | null;
@@ -147,6 +149,7 @@ type Workspace = {
   alerts: ServerAlert[];
   care: Saved;
   draft_meta: Record<string, HandoverMeta>;
+  handover_history: Record<string, HandoverMeta[]>;
   language_jobs: {
     id: string;
     patient_id: string;
@@ -771,6 +774,7 @@ export default function App() {
   const [busy, setBusy] = useState(false);
   const [familyView, setFamilyView] = useState<FamilyView | null>(null);
   const [draftMeta, setDraftMeta] = useState<Record<string, HandoverMeta>>({});
+  const [handoverHistory, setHandoverHistory] = useState<Record<string, HandoverMeta[]>>({});
   const [draftEdits, setDraftEdits] = useState<Record<string, string>>({});
   const [editRevisions, setEditRevisions] = useState<Record<string, number>>(
     {},
@@ -898,6 +902,7 @@ export default function App() {
         setSaved(data.care);
         setAlerts(data.alerts);
         setDraftMeta(data.draft_meta);
+        setHandoverHistory(data.handover_history || {});
         setSelectedId((id) =>
           data.patients.some((p) => p.id === id)
             ? id
@@ -1299,14 +1304,22 @@ export default function App() {
     )
     .filter((p) => filter === "All patients" || p.band === filter);
   const sortedPatients = [...matchingPatients].sort((a, b) => {
-    const rank = (p: Patient) =>
-      saved.priorities[p.id] === "Urgent"
+    const rank = (p: Patient) => {
+      const patientAlerts = activeAlerts.filter((alert) => alert.patientId === p.id);
+      const alertRank = patientAlerts.some((alert) => alert.status === "Open")
+        ? 6
+        : patientAlerts.length
+          ? 5
+          : 0;
+      const priorityRank = saved.priorities[p.id] === "Urgent"
         ? 4
         : saved.priorities[p.id] === "Review soon"
           ? 3
           : saved.priorities[p.id] === "Routine"
             ? -1
             : (p.score ?? 0);
+      return alertRank * 100 + priorityRank;
+    };
     return rank(b) - rank(a) || a.bed.localeCompare(b.bed);
   });
 
@@ -2475,6 +2488,29 @@ export default function App() {
     );
   }
 
+  function PerformancePage() {
+    const splitLabels: Record<string, string> = { val: "Validation", test: "Held-out test", b_check: "Dataset B check" };
+    const splits = Object.entries(evaluationArtifact.splits);
+    const formatPct = (value: number) => `${(value * 100).toFixed(1)}%`;
+    return <>
+      <div className="page-heading animate-in">
+        <div><span className="eyebrow heading-eyebrow">MODEL EVIDENCE</span><h1>Performance</h1><p>Held-out research results from the checked-in evaluation artifact. These are not calibrated probabilities or clinical validation.</p></div>
+        <span className="neutral-chip small-chip">Model {evaluationArtifact.modelVersion} · Features {evaluationArtifact.featureVersion}</span>
+      </div>
+      <div className="performance-summary-grid animate-in">
+        <div className="stat-card"><div className="stat-label">Selected policy <Activity size={26} /></div><div className="stat-main">5%</div><div className="stat-foot">False-alert patient policy</div></div>
+        <div className="stat-card"><div className="stat-label">Test AUROC <Activity size={26} /></div><div className="stat-main">{evaluationArtifact.splits.test.auroc.toFixed(3)}</div><div className="stat-foot">Held-out test split</div></div>
+        <div className="stat-card"><div className="stat-label">Test AUPRC <Activity size={26} /></div><div className="stat-main">{evaluationArtifact.splits.test.auprc.toFixed(3)}</div><div className="stat-foot">Positive row rate {formatPct(evaluationArtifact.splits.test.positiveRate)}</div></div>
+        <div className="stat-card"><div className="stat-label">Lead time <Clock size={26} /></div><div className="stat-main">{evaluationArtifact.splits.test.operatingPoint.leadHours}h</div><div className="stat-foot">Median before onset at 5% policy</div></div>
+      </div>
+      <div className="panel padded animate-in performance-panel">
+        <PanelTitle title="Held-out split results" subtitle={`Threshold ${evaluationArtifact.selectedThreshold.toFixed(4)} · best iteration ${evaluationArtifact.bestIteration}`} />
+        <div className="performance-table-wrap"><table className="performance-table"><caption className="sr-only">Held-out model evaluation results</caption><thead><tr><th>Split</th><th>Rows</th><th>AUROC</th><th>AUPRC</th><th>Detected by onset</th><th>Non-sepsis alerted</th><th>Alert episodes / 100 days</th></tr></thead><tbody>{splits.map(([key, split]) => <tr key={key}><th>{splitLabels[key]}</th><td>{split.rows.toLocaleString()}</td><td><strong>{split.auroc.toFixed(3)}</strong></td><td><strong>{split.auprc.toFixed(3)}</strong></td><td>{formatPct(split.operatingPoint.detected)}</td><td>{formatPct(split.operatingPoint.falseAlertPatients)}</td><td>{split.operatingPoint.episodesPer100Days.toFixed(2)}</td></tr>)}</tbody></table></div>
+        <div className="performance-note"><Shield size={17} /><span>Scores are uncalibrated research outputs. The 5% operating point was selected from validation and then applied unchanged to held-out evaluation; review alerts do not diagnose sepsis.</span></div>
+      </div>
+    </>;
+  }
+
   function HandoverPage() {
     if (!patient)
       return (
@@ -2486,6 +2522,11 @@ export default function App() {
     const draftKey = `${session}:${patient.id}`,
       meta = draftMeta[draftKey];
     const updates = saved.updates.filter((u) => u.patientId === patient.id);
+    const revisions = handoverHistory[patient.id] || [];
+    const latestRevision = revisions[0];
+    const previousRevision = revisions[1];
+    const previousLines = new Set((previousRevision?.text || "").split(/\n+/).map((line) => line.trim()).filter(Boolean));
+    const addedLines = latestRevision && previousRevision ? latestRevision.text.split(/\n+/).map((line) => line.trim()).filter((line) => line && !previousLines.has(line)) : [];
     const dirty = draftKey in draftEdits;
     return (
       <>
@@ -2631,6 +2672,12 @@ export default function App() {
                   Saved drafts persist in the database. Save changes before
                   leaving or refreshing.
                 </small>
+                {previousRevision && latestRevision && (
+                  <section className="handover-comparison" aria-label="New information since previous handover">
+                    <div className="comparison-heading"><div><strong>New information since revision {previousRevision.revision}</strong><small>Compared with patient hour {previousRevision.hour} · current revision {latestRevision.revision}</small></div><span className="neutral-chip small-chip">{addedLines.length} added line{addedLines.length === 1 ? "" : "s"}</span></div>
+                    {addedLines.length ? <ul>{addedLines.slice(0, 12).map((line, index) => <li key={`${line}-${index}`}><mark>+</mark>{line}</li>)}</ul> : <p className="muted">No new lines detected; the revision may contain edits or removals only.</p>}
+                  </section>
+                )}
               </>
             )}
           </div>
@@ -2984,6 +3031,7 @@ export default function App() {
     { page: "patients" as Page, label: "Patients", icon: Users },
     { page: "alerts" as Page, label: "Alert center", icon: Bell },
     { page: "handover" as Page, label: "Handover", icon: Clipboard },
+    { page: "performance" as Page, label: "Performance", icon: Activity },
   ];
   const pageName =
     page === "patient"
@@ -2994,6 +3042,7 @@ export default function App() {
             patients: "Patients",
             alerts: "Alert center",
             handover: "Handover",
+            performance: "Performance",
             family:
               user.role === "family" ? "Patient & family" : "Family preview",
             settings: "Settings",
@@ -3190,6 +3239,8 @@ export default function App() {
               AlertPage()
             ) : page === "handover" ? (
               HandoverPage()
+            ) : page === "performance" ? (
+              PerformancePage()
             ) : page === "family" ? (
               FamilyPage()
             ) : (

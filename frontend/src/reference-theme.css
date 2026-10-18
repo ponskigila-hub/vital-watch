@@ -182,6 +182,27 @@ h1 { color: var(--vw-navy); letter-spacing: -1.7px; }
 }
 .workspace-footer > span { display: flex; align-items: center; gap: 7px; }
 .notice, .ward-followup-reminder { border: 1px solid var(--vw-glass-line); border-radius: 20px; background: rgba(255,255,255,.62); box-shadow: 0 8px 18px rgba(15,23,42,.06); backdrop-filter: blur(14px); }
+.reliability-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 14px 0 4px; }
+.reliability-summary > div { display: grid; gap: 4px; padding: 11px 13px; border: 1px solid rgba(255,255,255,.78); border-radius: 13px; background: rgba(255,255,255,.58); }
+.reliability-summary span { color: var(--vw-slate); font-size: var(--font-caption); }
+.reliability-summary strong { color: var(--vw-navy); font-size: var(--font-body); }
+.handover-comparison { display: grid; gap: 12px; margin-top: 18px; padding: 16px; border: 1px solid rgba(72,202,228,.35); border-radius: 17px; background: rgba(72,202,228,.1); }
+.comparison-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.comparison-heading strong, .comparison-heading small { display: block; }
+.comparison-heading strong { color: var(--vw-navy); }
+.comparison-heading small { margin-top: 4px; color: var(--vw-slate); }
+.handover-comparison ul { display: grid; gap: 7px; margin: 0; padding: 0; list-style: none; }
+.handover-comparison li { display: flex; gap: 8px; color: var(--vw-navy); line-height: 1.55; }
+.handover-comparison mark { color: var(--vw-blue); background: transparent; font-weight: 800; }
+.performance-summary-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-bottom: 18px; }
+.performance-panel { overflow: hidden; }
+.performance-table-wrap { overflow-x: auto; }
+.performance-table { width: 100%; min-width: 820px; border-collapse: separate; border-spacing: 0; }
+.performance-table th, .performance-table td { padding: 13px 14px; border-bottom: 1px solid rgba(255,255,255,.7); text-align: left; color: var(--vw-slate); white-space: nowrap; }
+.performance-table thead th { color: var(--vw-slate); background: rgba(255,255,255,.4); font-size: var(--font-caption); }
+.performance-table tbody th, .performance-table td strong { color: var(--vw-navy); }
+.performance-note { display: flex; gap: 9px; align-items: flex-start; margin-top: 16px; padding: 13px 15px; border-radius: 14px; background: rgba(72,202,228,.11); color: var(--vw-slate); line-height: 1.55; }
+.performance-note svg { flex: 0 0 auto; margin-top: 2px; color: var(--vw-blue); }
 
 /* The replay bar is intentionally inside the main workspace width, not under the sidebar. */
 .replay-bar {
@@ -253,6 +274,9 @@ h1 { color: var(--vw-navy); letter-spacing: -1.7px; }
   .page-heading .button { width: 100%; margin-top: 12px; }
   .stats-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
   .overview-grid, .bottom-grid { grid-template-columns: 1fr; }
+  .performance-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .reliability-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .comparison-heading { flex-direction: column; }
   .workspace-footer { align-items: flex-start; flex-direction: column; }
   .replay-bar { min-height: 68px; padding: 9px 12px; border-radius: 18px; }
   .toast { top: 82px; right: 12px; max-width: calc(100vw - 24px); }

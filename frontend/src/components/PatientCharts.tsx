@@ -49,6 +49,11 @@ export function MeasurementHeatmap({ patient, start, hour }: { patient: Patient;
   const active = selected && metrics.some(m => m.key === selected.key) && selected.hour >= start && selected.hour <= hour ? selected : { key: metrics[0].key, hour: start }
   const activeMetric = metrics.find(m => m.key === active.key)!
   const value = rows.find(r => r.ICULOS === active.hour)?.[active.key]
+  const totalCells = rows.length * metrics.length
+  const recordedCells = rows.reduce((count, row) => count + metrics.filter(metric => row[metric.key] != null).length, 0)
+  const coverage = totalCells ? recordedCells / totalCells : 0
+  const latestRecordedHour = [...rows].reverse().find(row => metrics.some(metric => row[metric.key] != null))?.ICULOS
+  const missingCells = totalCells - recordedCells
   function move(e: KeyboardEvent<HTMLButtonElement>, row: number, col: number) {
     const shifts: Record<string, [number, number]> = { ArrowLeft: [0, -1], ArrowRight: [0, 1], ArrowUp: [-1, 0], ArrowDown: [1, 0], Home: [0, -col], End: [0, rows.length - col - 1] }
     const shift = shifts[e.key]
@@ -62,6 +67,7 @@ export function MeasurementHeatmap({ patient, start, hour }: { patient: Patient;
   }
   return <section className="measurement-availability" aria-label="Measurement availability">
     <div className="availability-heading"><h4>Measurement availability</h4><div className="history-view-tabs" aria-label="Availability measurements">{(['vitals', 'labs'] as const).map(g => <button key={g} aria-pressed={group === g} className={group === g ? 'active' : ''} onClick={() => { setGroup(g); setSelected(null) }}>{g === 'vitals' ? 'Vitals' : 'Labs'}</button>)}</div></div>
+    <div className="reliability-summary" aria-label="Data reliability summary"><div><span>Window coverage</span><strong>{(coverage * 100).toFixed(0)}%</strong></div><div><span>Recorded cells</span><strong>{recordedCells.toLocaleString()} / {totalCells.toLocaleString()}</strong></div><div><span>Missing cells</span><strong>{missingCells.toLocaleString()}</strong></div><div><span>Latest reading</span><strong>{latestRecordedHour == null ? 'None' : `Hour ${latestRecordedHour}`}</strong></div></div>
     <div className="availability-legend"><span><i className="recorded" />Recorded</span><span><i />No reading</span><span>Hours {start}–{hour}</span></div>
     <div className="availability-scroll"><table className="availability-table"><caption className="sr-only">Recorded measurements by patient hour. Select a cell for its value; use arrow keys to move. A blank cell is missing, not a normal result.</caption><thead><tr><th scope="col">Measurement</th>{rows.map((r, i) => <th scope="col" key={r.ICULOS}>{i === 0 || i === rows.length - 1 || i % Math.max(1, Math.ceil(rows.length / 8)) === 0 ? `${r.ICULOS}h` : ''}</th>)}</tr></thead><tbody>{metrics.map((m, ri) => <tr key={m.key}><th scope="row">{m.label}</th>{rows.map((r, ci) => {
       const recorded = r[m.key] != null, isActive = active.key === m.key && active.hour === r.ICULOS

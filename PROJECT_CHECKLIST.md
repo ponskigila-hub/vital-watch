@@ -107,8 +107,8 @@ The trainer's test report contains AUROC 0.8223 and AUPRC 0.1349. These are repo
 - [x] Save clinician review-priority overrides with reasons.
 - [x] Save care notes with patient hour and caregiver identity.
 - [x] Provide workflow prompts for review; no treatment recommendation is generated.
-- [ ] Pin or escalate patient ranking based on unresolved alerts — current ordering uses clinician overrides and model scores.
-- [ ] Add in-app toast notifications for new alerts, if desired.
+- [x] Pin or escalate patient ranking based on unresolved alerts — open alerts now rank above acknowledged alerts, clinician overrides, and score-only ordering.
+- [x] Add in-app toast notifications for new alerts, if desired.
 - [ ] Add sound, desktop/push notifications, or automatic escalation — not currently implemented.
 - [ ] Define clinically reviewed escalation/action guidance before adding clinical recommendations.
 
@@ -186,7 +186,7 @@ These software checks do not establish clinical accuracy or LinuxONE deployment 
 - [x] Add host, inference benchmark, and Snap ML compatibility-check scripts to the repository.
 - [x] Verify s390x architecture, authorized SSH access, and the running application.
 - [x] Confirm Python, FastAPI, and LightGBM availability on the host.
-- [ ] Add and verify Docker/Podman deployment files.
+- [x] Add Docker/Podman deployment files (`Dockerfile`, `compose.yml`, `.dockerignore`); host deployment verification remains required.
 - [x] Deploy frontend, backend, SQLite storage, and LightGBM CPU inference to LinuxONE; health/readiness verified.
 - [ ] Configure a reachable URL, HTTPS, exact allowed origins, and secure cookies.
 - [x] Verify the existing single-process app restarts successfully, preserves private configuration and database records, serves the updated frontend, and exposes the new review/workflow routes.
@@ -237,10 +237,10 @@ This expansion was discussed, but no additional disease or implementation was se
 - [x] Deploy review checkpoints, patient-scoped alert navigation, alert ownership/follow-up, and the revised compact overdue layout to LinuxONE; health, sign-in, API availability, served assets, configuration, and database preservation checked.
 - [x] Pass all 11 review-checkpoint and alert-follow-up tests on LinuxONE/s390x using isolated test databases.
 - [x] Add clinician-owned alert review with self-claim/release, patient-hour reassessment scheduling, due/overdue reminders, separate completion, and a persistent response timeline. Guard ownership and stale writes.
-- [ ] Compare successive handovers and highlight newly added information.
-- [ ] Add a compact reliability summary alongside the existing measurement-availability heatmap.
-- [ ] Display actual held-out model evaluation results in a dedicated performance view.
-- [ ] Show measured LinuxONE uptime, inference latency, and service health after deployment.
+- [x] Compare successive handovers and highlight newly added information.
+- [x] Add a compact reliability summary alongside the existing measurement-availability heatmap.
+- [x] Display actual held-out model evaluation results in a dedicated performance view.
+- [x] Add `/api/metrics` instrumentation for uptime, request latency, inference latency, database readiness, and provider health; [ ] capture measured LinuxONE uptime, inference latency, and service health after deployment.
 
 ## Recommended next sequence
 

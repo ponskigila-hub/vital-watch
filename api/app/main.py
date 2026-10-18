@@ -103,16 +103,22 @@ def create_app(settings: Settings | None = None):
     app.state.engine = engine
     app.state.clock_lock = clock_lock
     app.state.settings = settings
+    app.state.started_at = time.time()
+    app.state.request_count = 0
+    app.state.last_request_latency_ms = None
     register_language_routes(app, settings)
     register_review_routes(app)
 
     @app.middleware("http")
     async def browser_boundaries(request: Request, call_next):
+        request_started = time.perf_counter()
         if request.url.path.startswith("/api/") and request.method not in ("GET", "HEAD", "OPTIONS"):
             origin = request.headers.get("origin")
             if origin and origin not in settings.allowed_origins:
                 return JSONResponse({"detail": "Untrusted request origin"}, status_code=403)
         response = await call_next(request)
+        request.app.state.request_count += 1
+        request.app.state.last_request_latency_ms = round((time.perf_counter() - request_started) * 1000, 2)
         if request.url.path.startswith("/api/"):
             response.headers["Cache-Control"] = "no-store"
         response.headers["X-Content-Type-Options"] = "nosniff"
@@ -132,6 +138,22 @@ def create_app(settings: Settings | None = None):
     def ready(db=Depends(get_db)):
         db.execute(text("SELECT 1"))
         return {"status": "ready"}
+
+    @app.get("/api/metrics")
+    def metrics(request: Request, db=Depends(get_db)):
+        db.execute(text("SELECT 1"))
+        provider = db.info.get("prediction_provider")
+        prediction_status = provider.status() if provider else {"status": "disconnected"}
+        return {
+            "service": "VitalWatch",
+            "uptime_seconds": round(max(0, time.time() - request.app.state.started_at), 2),
+            "request_count": request.app.state.request_count,
+            "last_request_latency_ms": request.app.state.last_request_latency_ms,
+            "inference_latency_ms": getattr(provider, "last_inference_latency_ms", None),
+            "database": "ready",
+            "prediction": prediction_status,
+            "measured_on_host": "application runtime; LinuxONE evidence requires deployment capture",
+        }
 
     @app.post(PREFIX + "/auth/login")
     def login(body: Login, request: Request, response: Response, db=Depends(get_db)):
