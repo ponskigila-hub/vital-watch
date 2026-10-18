@@ -27,28 +27,11 @@ The intended benefit is earlier and more organized review of concerning trends, 
 
 ## Solution overview
 
-The application combines causal replay, data-quality visibility, LightGBM inference, threshold-crossing alerts, clinician workflow, and operational monitoring.
+Recorded patient data moves through hourly replay and LightGBM scoring into clinician review, follow-up, handover, and approved family updates. Optional Gemini assistance explains supplied evidence and drafts text; clinicians remain responsible for care decisions and completing actions.
 
-```mermaid
-flowchart LR
-    A[PhysioNet Challenge 2019 hourly recordings] --> B[Causal replay and validation]
-    B --> C[Missing-data and measurement availability view]
-    B --> D[Shared 127-feature preprocessing]
-    D --> E[LightGBM v1 CPU inference]
-    E --> F[5% validation operating policy\nthreshold approx. 0.0937]
-    F --> G[Persisted scores and rising-edge alerts]
-    G --> H[FastAPI service on IBM LinuxONE]
-    H --> I[(SQLite clinical workflow data)]
-    I --> J[React VitalWatch dashboard]
-    J --> K[Alert review and patient prioritization]
-    J --> L[Successive handover comparison]
-    J --> M[Approved family updates]
-    H --> N["/api/health · /api/ready · /api/metrics"]
-```
+![VitalWatch application workflow: recordings, scoring, clinician review, follow-up, Gemini assistance and approved family updates](docs/workflow.png)
 
-The model is only one part of the system. The workflow around it makes the result reviewable: a new threshold crossing creates an alert, unresolved alerts influence patient ordering, missing measurements receive a reliability summary, and successive handover revisions show newly added information.
-
-See the [complete application workflow](docs/workflow.md), with a shareable [PNG](docs/workflow.png), [SVG](docs/workflow.svg), and [editable Mermaid source](docs/workflow.mmd).
+[Workflow details](docs/workflow.md) · [SVG](docs/workflow.svg) · [Editable Mermaid](docs/workflow.mmd)
 
 ### System architecture
 
