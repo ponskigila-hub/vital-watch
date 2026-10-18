@@ -126,6 +126,8 @@ def snapshot(db, patient, replay, hour=None):
     for a in alerts_for(db, cutoff, patient.id):
         # Alert descriptions may contain implementation details; send structured fields only.
         evidence[f"alert:{a['id']}"] = {"hour": a["hour"], "status": a["status"], "band": a["band"], "origin": a["origin"]}
+        state = a["workflow"]
+        evidence[f"alert:{a['id']}"]["follow_up"] = {"assigned": bool(state["owner_id"]), "status": state["follow_up"], "due_patient_hour": state["due_hour"], "overdue": state["overdue"], "due_now": state["due_now"]}
     evidence["workflow:catalogue"] = CATALOGUE
     context = {"fictional_demo_context": True, "known_conditions": patient.conditions if patient.ai_context_approved else [], "medications": patient.medications if patient.ai_context_approved else []}
     evidence["context:profile"] = context

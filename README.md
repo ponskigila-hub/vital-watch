@@ -4,7 +4,7 @@ VitalWatch is a hospital monitoring research prototype that brings patient readi
 
 The app includes a React frontend, an authenticated FastAPI backend, and a persistent SQLite database. **The trained LightGBM sepsis predictor is connected for local CPU inference.** It uses the trainer’s shared preprocessing and produces saved, patient-specific scores and threshold-crossing alerts as the replay advances. Optional Gemini integration adds evidence-linked review suggestions, clinician chat about a patient, and editable AI handovers. No Gemini key is needed for monitoring, scoring, or template handovers. The personal-baseline detector and additional disease predictors are not implemented.
 
-**Verified locally on 18 October 2026:** 58 backend tests, six frontend tests, and the production build passed. Live Gemini generation has also been checked with approved demo evidence. LinuxONE deployment remains pending; see the [complete project checklist](PROJECT_CHECKLIST.md).
+**Verified locally on 18 October 2026:** 69 backend tests, nine frontend tests, and the production build passed. Live Gemini generation has also been checked with approved demo evidence. See the [complete project checklist](PROJECT_CHECKLIST.md).
 
 ## Contents
 
@@ -32,6 +32,7 @@ The app includes a React frontend, an authenticated FastAPI backend, and a persi
 | Additional measurements | DBP, EtCO2, and 26 laboratory/recorded fields, with explicit missing-data states |
 | Replay | Shared server-controlled playback, pause, seek, speed selection, and archived replay sessions |
 | Care workflow | Persistent notes, manual monitoring focus, clinician review-priority overrides with reasons, model alert acknowledgement and status changes |
+| Since your last review | Personal checkpoints, changed readings, new lab results, alerts, and care updates; outstanding work remains visible |
 | Handover | Template or Gemini-generated doctor-to-doctor drafts, saved revisions, conflict protection, supporting evidence, and text export |
 | Family communication | Explicitly approved updates, immediate withdrawal, and patient assignments enforced by the backend |
 | Accounts | Clinician and family roles, session-cookie authentication, password hashing, CSRF protection, and sign-in throttling |
@@ -158,6 +159,10 @@ With `PREDICTION_PROVIDER=lightgbm` (the default), scores are calculated from ea
 
 A model-load or inference failure produces an unavailable state and never silently switches to example scores. The former fixture toggle, example conversation button, and repeated demo badges have been removed from the interface. Source information and model limitations remain visible.
 
+The **Since your last review** panel sits below the patient's vital cards. Choose **Mark reviewed** to save your personal checkpoint for that patient and replay session. On later visits, it compares the current cutoff with your checkpoint: new alert episodes, laboratory result counts, care updates, changed vital readings, and changes in the sepsis signal. Expand **All recorded changes** for more detail. Measurements retain their original observation hours; missing data remains missing. This factual briefing works without Gemini.
+
+Marking reviewed records an audited checkpoint only. **Unresolved alerts and planned actions stay open** and remain visible under **Still needs follow-up**. Each clinician has a separate checkpoint; opening the page does not mark anything reviewed. Same-hour care updates are tracked, stale writes are rejected, and rewinding before your checkpoint disables marking until you return to that hour or later. A new replay starts a fresh checkpoint.
+
 ### 2. Replay the patient timeline
 
 Use the bottom playback bar to play, pause, or seek to a patient hour. In **Settings**, select the number of seconds per recorded hour. This speeds up the demonstration; it does not change the original measurement times.
@@ -190,6 +195,10 @@ Missing observations remain missing. Each latest value identifies its observatio
 The alert center summarizes alerts awaiting acknowledgement, under review, and resolved. Each item prioritizes patient identity, the recorded event hour, current signal availability, and review controls. **Event details** retains the original model output, score, threshold, policy, and model key without placing technical metadata in the main alert heading. Recorded events remain distinct from the patient's current signal. The overview's compact feed always shows unresolved alerts, independently of the alert-center filter.
 
 The light-blue **Clinician priority** panel makes an unset or selected priority visible and provides **Set priority / Change priority**. A lower model score does not resolve an earlier alert. Acknowledgement records that someone has seen an alert; completion/resolution requires a separate clinician action. Alerts currently use in-app counts and review controls, without sound, push notifications, or automatic escalation.
+
+**Alert ownership and follow-up:** in the Alert center, choose **Take ownership**, enter a later **patient hour**, and select **Schedule**. This uses the recording's replay clock, not wall-clock time; the app does not prescribe a reassessment interval. The owner can reschedule or choose **Record follow-up done**. Another clinician cannot take an owned alert or change its follow-up. Complete pending follow-up before releasing ownership.
+
+The **Follow-up** tab retains all pending reassessments, including tasks attached to resolved alerts. Due/overdue counts update with replay; a labelled **Ward follow-ups** reminder appears across clinical pages. Patient-page links stay scoped to that patient. **Response timeline** records actors and patient hours for ownership, alert status, scheduling, and completion; these events also appear in the care timeline. Completion, acknowledgement, and resolution are independent. Rewinding hides future events and blocks conflicting follow-up edits. State persists in SQLite without a new migration. Gemini receives structured task facts, with owner identities excluded.
 
 ### 5. Prepare a handover
 
@@ -399,7 +408,9 @@ Most application endpoints are under `/api/v1`. Use the running server's [OpenAP
 | `/patients/{id}`, `/history`, `/comparisons`, `/evidence` | Patient data; append subpaths to `/patients/{id}`; clinician |
 | `/replay`, `/replay/restart`, `/replays` | Shared clock controls and archived session metadata; clinician |
 | `/patients/{id}/notes`, `/focus`, `/priority` | Audited care actions; append subpaths to `/patients/{id}`; clinician |
+| `GET /patients/{id}/review`, `POST /patients/{id}/review` | Personal change briefing and audited review checkpoint; clinician |
 | `/alerts/{id}` | Acknowledge, progress, or resolve a saved alert; clinician |
+| `PATCH /alerts/{id}/workflow` | Claim/release ownership, schedule/reschedule, or complete follow-up; clinician, version and replay-hour checked |
 | `/patients/{id}/handovers`, `/handovers/{id}`, `/handovers/{id}/export` | Generate, edit, and export drafts; clinician |
 | `/patients/{id}/updates`, `/updates/{id}/withdraw` | Approve/withdraw family updates; clinician |
 | `/patients/{id}/messages` | Saved clinician questions and queued Gemini replies; clinician |
@@ -446,7 +457,7 @@ npm run build --prefix frontend
 npm test --prefix frontend
 ```
 
-The backend suite currently contains **58 tests** covering authentication, CSRF/origin checks, family restrictions, replay cutoffs, imports, care persistence, handover conflicts/export, real artifact scoring, training/serving parity, SHAP output, background scoring, migrations, alert deduplication, and language integration. Gemini tests use mocked responses and cover evidence/citation rejection, consent boundaries, durable jobs, deduplication, timeout/quota handling, model fallback, and planned-versus-completed actions. Tests do not use the private live API key.
+The backend suite currently contains **69 tests** covering authentication, CSRF/origin checks, family restrictions, replay cutoffs, imports, care persistence, handover conflicts/export, real artifact scoring, training/serving parity, SHAP output, background scoring, migrations, alert deduplication, and language integration. Review-checkpoint tests cover per-clinician and patient isolation, persistence, same-hour changes, stale and duplicate writes, rewinds, new sessions, and outstanding alerts/actions. Follow-up tests verify ownership conflicts, scheduling, due/overdue states, separate completion, persistence, cutoff guards, permissions, and outbound identity exclusion. Gemini tests use mocked responses and cover evidence/citation rejection, consent boundaries, durable jobs, deduplication, timeout/quota handling, model fallback, and planned-versus-completed actions. Tests do not use the private live API key.
 
 The frontend build checks TypeScript and produces the compiled application. Nine frontend tests verify score changes, missing hours, cutoff handling, persistent review status, measurement comparisons, chat formatting, and evidence-bound chart data.
 
@@ -476,12 +487,18 @@ Local browser checks include the clinician note → handover → approved family
 
 ## Deployment and current limitations
 
-The intended hackathon host is IBM LinuxONE. **This repository has been verified locally; it has not yet been deployed or tested on LinuxONE/s390x.** No containerized deployment, accelerator execution, or second AI framework is claimed by this implementation.
+The hackathon app is deployed on IBM LinuxONE Ubuntu (verified **s390x**), with a single FastAPI process serving the compiled frontend, SQLite storage, and LightGBM CPU inference. Host health/readiness and LightGBM availability were checked on 18 October 2026. No containerized deployment, accelerator execution, or second AI framework is claimed by this implementation.
 
-For the next deployment step, verify Python/package availability on the provided host, build the frontend, persist the database outside disposable storage, and place the application behind HTTPS. Set secure cookies and exact allowed origins for that deployment. Bind the backend according to the host's network setup rather than exposing the local development server without deployment configuration.
+The current host binds the app to `127.0.0.1:8000`; authorized users access it through an SSH tunnel. Start the tunnel from your laptop using your own approved key and host details, then open `http://localhost:8080`:
+
+```bash
+ssh -N -L 8080:127.0.0.1:8000 -i /path/to/your-key.pem linux1@YOUR_LINUXONE_HOST
+```
+
+Keep the tunnel terminal open. The code, database, and Gemini configuration used by this URL belong to the LinuxONE checkout, independently of your laptop's app. Preserve the server's ignored `api/.env`, generated credentials, and runtime database during updates. In the supplied environment, `~/vw.sh start|stop|restart|status` controls the app. Build the frontend locally and copy `frontend/dist` to the server when Node.js is unavailable there; pulling Git alone does not update ignored build files. Back up configuration, SQLite, and the previous frontend before deployment. Public HTTPS hosting, secure-cookie configuration, and containerization remain separate deployment work.
 
 Run **one backend worker / one application instance** for the current shared-clock design. Multiple workers would each start a replay clock; a distributed clock/locking design is not implemented. SQLite is the implemented and tested database configuration. External database drivers and migrations have not been validated.
 
-Further work includes LinuxONE/container deployment, a trained personal-baseline detector, a reviewed medical reference library, live sensor ingestion, production account administration, and broader operational/clinical validation. Application code licensing is not specified by the upstream dataset notices; dataset attribution is retained separately.
+Further work includes containerized deployment, a trained personal-baseline detector, a reviewed medical reference library, live sensor ingestion, production account administration, and broader operational/clinical validation. Application code licensing is not specified by the upstream dataset notices; dataset attribution is retained separately.
 
-The proposed “since last review” summary, clinician task assignment/due times, handover change comparison, dedicated model-performance view, and LinuxONE operations panel are **ideas, not implemented features**. See [PROJECT_CHECKLIST.md](PROJECT_CHECKLIST.md) for the full completed/pending breakdown and submission tasks.
+The **Since your last review** summary and clinician-owned alert follow-up are implemented locally. Handover change comparison, a dedicated model-performance view, and a LinuxONE operations panel remain ideas. See [PROJECT_CHECKLIST.md](PROJECT_CHECKLIST.md) for the full completed/pending breakdown and submission tasks.

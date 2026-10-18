@@ -134,8 +134,16 @@ def alerts_for(db, replay, patient_id=None):
     events = events_for(db, replay, patient_id)
     result = []
     for a in db.scalars(query.order_by(Alert.hour.desc())):
-        transition = next((e for e in events if e.data.get("alert_id") == a.id), None)
-        result.append({"id": a.id, "patientId": a.patient_id, "hour": a.hour, "title": a.title, "detail": a.detail, "band": a.band, "origin": a.origin, "status": transition.data["status"] if transition else "Open"})
+        related = [e for e in events if e.data.get("alert_id") == a.id]
+        transition = next((e for e in related if e.kind == "Alert update" and "status" in e.data), None)
+        workflow = next((e for e in related if e.kind == "Alert follow-up"), None)
+        state = workflow.data if workflow else {}
+        owner = db.get(User, state["owner_id"]) if state.get("owner_id") else None
+        due = state.get("due_hour")
+        follow_up = state.get("follow_up", "none")
+        result.append({"id": a.id, "patientId": a.patient_id, "hour": a.hour, "title": a.title, "detail": a.detail, "band": a.band, "origin": a.origin, "status": transition.data["status"] if transition else "Open",
+            "workflow": {"version": workflow.id if workflow else None, "owner_id": owner.id if owner else None, "owner_name": owner.name if owner else None, "due_hour": due, "follow_up": follow_up, "overdue": follow_up == "scheduled" and due is not None and replay.hour > due, "due_now": follow_up == "scheduled" and due == replay.hour},
+            "history": [event_out(db, e) for e in reversed(related)]})
     return result
 
 

@@ -8,6 +8,7 @@ import {
   Info,
 } from "react-feather";
 import type { AlertState, Band, Patient } from "../data";
+import { useState } from "react";
 import "./alert-center.css";
 
 export type ClinicalAlert = {
@@ -19,8 +20,11 @@ export type ClinicalAlert = {
   band: Band;
   origin: string;
   status: AlertState["status"];
+  workflow?: {version: string | null; owner_id: string | null; owner_name: string | null; due_hour: number | null; follow_up: string; overdue: boolean; due_now: boolean};
+  history?: {id: string; hour: number; actorName: string; text: string}[];
 };
-export type AlertFilter = "Active" | "Resolved" | "All";
+export type AlertFilter = "Active" | "Follow-up" | "Resolved" | "All";
+export type WorkflowOperation = "claim" | "release" | "schedule" | "complete";
 type FeedProps = {
   alerts: ClinicalAlert[];
   patients: Patient[];
@@ -29,13 +33,39 @@ type FeedProps = {
   compact?: boolean;
   onPatient: (patient: Patient) => void;
   onStatus: (id: string, status: AlertState["status"]) => void;
+  viewerId?: string;
+  maxHour?: number;
+  onWorkflow?: (alert: ClinicalAlert, operation: WorkflowOperation, dueHour?: number) => void;
 };
 type CenterProps = FeedProps & {
+  patientScope: string | null;
+  onPatientScope: (id: string | null) => void;
   filter: AlertFilter;
   onFilter: (filter: AlertFilter) => void;
   scoringAvailable: boolean;
   scoringReason?: string;
 };
+
+function AlertFollowUp({alert, hour, busy, viewerId, maxHour, onWorkflow}: {alert: ClinicalAlert; hour: number; busy: boolean; viewerId?: string; maxHour?: number; onWorkflow: NonNullable<FeedProps['onWorkflow']>}) {
+  const [due, setDue] = useState('');
+  const state = alert.workflow;
+  const mine = state?.owner_id === viewerId;
+  const pending = state?.follow_up === 'scheduled';
+  return <section className={`arc-follow-up ${state?.overdue ? 'arc-follow-up-overdue' : ''}`} aria-label="Alert ownership and follow-up">
+    <div className="arc-follow-up-state"><div><span>Review owner</span><strong>{state?.owner_name || 'Unassigned'}</strong></div><div><span>Follow-up</span><strong>{pending ? `${state?.overdue ? 'Overdue' : state?.due_now ? 'Due now' : 'Scheduled'} · hour ${state?.due_hour}` : state?.follow_up === 'completed' ? 'Completed' : 'Not scheduled'}</strong></div></div>
+    <div className="arc-follow-up-controls">
+      {!state?.owner_id && alert.status !== 'Resolved' && <button className="button secondary" disabled={busy} onClick={() => onWorkflow(alert,'claim')}>Take ownership</button>}
+      {mine && <>
+        <form onSubmit={e => {e.preventDefault(); onWorkflow(alert,'schedule',Number(due));}}>
+          <label>Follow-up at patient hour<input aria-label={`Follow-up hour for ${alert.patientId} alert at hour ${alert.hour}`} type="number" min={hour+1} max={maxHour} required value={due} placeholder={String(hour+1)} onChange={e => setDue(e.target.value)} /></label>
+          <button className="button secondary" disabled={busy || !due || Number(due)<=hour || Number(due)>(maxHour ?? Infinity)}>{pending ? 'Reschedule' : 'Schedule'}</button>
+        </form>
+        {pending ? <button className="button dark" disabled={busy} onClick={() => onWorkflow(alert,'complete')}><CheckCircle size={17}/>Record follow-up done</button> : <button className="text-link" disabled={busy} onClick={() => onWorkflow(alert,'release')}>Release ownership</button>}
+      </>}
+    </div>
+    {mine && <small>Uses patient hours, not wall-clock time. Completion does not resolve the alert.</small>}
+  </section>
+}
 
 function AlertCard({
   alert,
@@ -45,6 +75,9 @@ function AlertCard({
   compact,
   onPatient,
   onStatus,
+  viewerId,
+  maxHour,
+  onWorkflow,
 }: {
   alert: ClinicalAlert;
   patient?: Patient;
@@ -53,6 +86,9 @@ function AlertCard({
   compact: boolean;
   onPatient: FeedProps["onPatient"];
   onStatus: FeedProps["onStatus"];
+  viewerId?: string;
+  maxHour?: number;
+  onWorkflow?: FeedProps['onWorkflow'];
 }) {
   const name = patient?.name || alert.patientId;
   const resolved = alert.status === "Resolved";
@@ -152,6 +188,13 @@ function AlertCard({
         )}
       </div>
 
+      {!compact && onWorkflow && <AlertFollowUp alert={alert} hour={hour} busy={busy} viewerId={viewerId} maxHour={maxHour} onWorkflow={onWorkflow}/>}
+      {compact && alert.workflow?.follow_up === 'scheduled' && <section className={`arc-followup-summary ${alert.workflow.overdue ? 'is-overdue' : ''}`} aria-label="Follow-up reminder">
+        <div className="arc-followup-summary-heading"><Clock size={20}/><strong>{alert.workflow.overdue ? 'Follow-up overdue' : alert.workflow.due_now ? 'Follow-up due now' : 'Follow-up scheduled'}</strong></div>
+        {alert.workflow.overdue && <p className="arc-followup-delay">{hour - alert.workflow.due_hour!} patient {hour - alert.workflow.due_hour! === 1 ? 'hour' : 'hours'} overdue</p>}
+        <dl><div><dt>Due at</dt><dd>Hour {alert.workflow.due_hour}</dd></div><div><dt>Review owner</dt><dd>{alert.workflow.owner_name || 'Unassigned'}</dd></div></dl>
+      </section>}
+      {!compact && !!alert.history?.length && <details className="arc-details"><summary>Response timeline <ChevronDown size={18}/></summary><ol className="arc-response-timeline">{alert.history.map(e => <li key={e.id}><strong>Hour {e.hour} · {e.actorName}</strong><p>{e.text}</p></li>)}</ol></details>}
       {!compact && (
         <details className="arc-details">
           <summary>
@@ -184,6 +227,9 @@ export function AlertFeed({
   compact = false,
   onPatient,
   onStatus,
+  viewerId,
+  maxHour,
+  onWorkflow,
 }: FeedProps) {
   return (
     <div
@@ -201,6 +247,9 @@ export function AlertFeed({
           compact={compact}
           onPatient={onPatient}
           onStatus={onStatus}
+          viewerId={viewerId}
+          maxHour={maxHour}
+          onWorkflow={onWorkflow}
         />
       ))}
     </div>
@@ -210,6 +259,8 @@ export function AlertFeed({
 export function AlertCenter({
   alerts,
   patients,
+  patientScope,
+  onPatientScope,
   hour,
   busy,
   filter,
@@ -218,6 +269,9 @@ export function AlertCenter({
   onStatus,
   scoringAvailable,
   scoringReason,
+  viewerId,
+  maxHour,
+  onWorkflow,
 }: CenterProps) {
   const open = alerts.filter((alert) => alert.status === "Open").length;
   const reviewing = alerts.filter(
@@ -228,19 +282,20 @@ export function AlertCenter({
   const visible = alerts.filter(
     (alert) =>
       filter === "All" ||
-      (filter === "Resolved"
+      (filter === "Follow-up" ? alert.workflow?.follow_up === 'scheduled' : filter === "Resolved"
         ? alert.status === "Resolved"
         : alert.status !== "Resolved"),
   );
   const counts = {
     Active: open + reviewing,
+    'Follow-up': alerts.filter(a => a.workflow?.follow_up === 'scheduled').length,
     Resolved: resolved,
     All: alerts.length,
   };
   const emptyTitle =
     !scoringAvailable && !alerts.length
       ? "Scoring is unavailable"
-      : filter === "Resolved"
+      : filter === "Follow-up" ? "No pending follow-ups" : filter === "Resolved"
         ? "No resolved alerts yet"
         : filter === "Active"
           ? "No active alerts through this hour"
@@ -251,21 +306,29 @@ export function AlertCenter({
         "Check the prediction connection in workspace settings."
       : filter === "Resolved"
         ? "Alerts appear here after a clinician marks them as resolved."
-        : "There are no alerts in this view. A low score or an empty list does not rule out sepsis.";
+        : filter === "Follow-up" ? "Scheduled reassessments appear here until recorded as completed." : "There are no alerts in this view. A low score or an empty list does not rule out sepsis.";
 
   return (
     <div className="alert-workspace">
       <header className="aw-heading">
         <div>
           <h1>Alert center</h1>
-          <p>Review and update patient alerts.</p>
+          <p>{patientScope ? 'Alerts for the selected patient.' : 'Alerts across all patients.'} Acknowledged alerts remain under review until resolved.</p>
         </div>
         <span>
           <Clock size={18} /> Patient hour <b>{hour}</b>
         </span>
       </header>
       <section className="panel aw-board" aria-label="Patient alert review">
+        <div className="aw-patient-scope">
+          <label htmlFor="alert-patient-scope">Patient</label>
+          <select id="alert-patient-scope" value={patientScope || ''} onChange={e => onPatientScope(e.target.value || null)}>
+            <option value="">All patients</option>
+            {patients.map(p => <option key={p.id} value={p.id}>{p.name} · Bed {p.bed}</option>)}
+          </select>
+        </div>
         <dl className="aw-summary">
+          <div><dt>Follow-up due / overdue</dt><dd className={alerts.some(a => a.workflow?.overdue) ? 'aw-count-open' : ''}>{alerts.filter(a => a.workflow?.overdue || a.workflow?.due_now).length.toString().padStart(2,'0')}</dd></div>
           <div>
             <dt>Awaiting acknowledgement</dt>
             <dd className={open ? "aw-count-open" : ""}>
@@ -283,7 +346,7 @@ export function AlertCenter({
         </dl>
         <div className="aw-toolbar">
           <div aria-label="Filter alerts">
-            {(["Active", "Resolved", "All"] as const).map((tab) => (
+            {(["Active", "Follow-up", "Resolved", "All"] as const).map((tab) => (
               <button
                 key={tab}
                 aria-pressed={filter === tab}
@@ -305,6 +368,9 @@ export function AlertCenter({
             busy={busy}
             onPatient={onPatient}
             onStatus={onStatus}
+            viewerId={viewerId}
+            maxHour={maxHour}
+            onWorkflow={onWorkflow}
           />
         ) : (
           <div className="aw-empty">

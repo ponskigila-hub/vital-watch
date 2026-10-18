@@ -52,6 +52,13 @@ class AlertCommand(Command):
     status: Literal["Open", "Acknowledged", "In progress", "Resolved"]
 
 
+class AlertWorkflowCommand(Command):
+    hour: int = Field(ge=1)
+    version: str | None = Field(default=None, max_length=64)
+    operation: Literal["claim", "release", "schedule", "complete"]
+    due_hour: int | None = Field(default=None, ge=1)
+
+
 class PlaybackCommand(Command):
     revision: int = Field(ge=1)
     hour: int | None = Field(default=None, ge=1)

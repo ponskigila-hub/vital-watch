@@ -1,6 +1,6 @@
 # VitalWatch project checklist
 
-Reviewed: 18 October 2026. Based on the current source, supplied model artifacts, evaluation report, local automated checks, and browser verification. GitHub was fetched before preparing this update. Training has not been reproduced and the IBM server has not been inspected.
+Reviewed: 18 October 2026. Based on current source, supplied model artifacts, evaluation report, automated checks, browser verification, and LinuxONE inspection over SSH. GitHub was fetched before this update. Training has not been reproduced.
 
 Checked means implemented for the local prototype. Unchecked means incomplete, unverified, or deferred as stated. A working interface or integration contract alone does not count as a connected AI feature.
 
@@ -161,7 +161,7 @@ Gemini is off by default. Set LANGUAGE_PROVIDER=gemini and the backend GEMINI_AP
 - [x] Generate private local demo credentials and keep credentials/runtime databases out of Git.
 - [x] Provide API health/readiness routes and interactive API documentation.
 - [x] Provide a CLI to initialize the database and assign patients to a family account.
-- [x] Pass all 58 backend tests covering permissions, replay, imports, care persistence, inference, alerts, Gemini jobs, grounding, fallback, and handover handling.
+- [x] Pass all 69 backend tests covering permissions, replay, imports, care persistence, inference, alerts, Gemini jobs, grounding, fallback, handover handling, personal review checkpoints, and owned alert follow-up.
 - [x] Pass nine frontend tests for score history, comparisons, persistent review status, chat formatting, and evidence-bound charts.
 - [x] Successfully build the frontend with the new patient charts and priority styling.
 - [x] Manually check local clinician, handover, family, and sepsis-insight flows in the browser.
@@ -177,10 +177,10 @@ These software checks do not establish clinical accuracy or LinuxONE deployment 
 
 - [x] Obtain access to the supplied Ubuntu LinuxONE server (user-reported: 3 vCPUs, 8 GB RAM, 50 GB disk).
 - [x] Add host, inference benchmark, and Snap ML compatibility-check scripts to the repository.
-- [ ] Verify the actual server architecture, access method, and installed dependencies.
-- [ ] Confirm the application's Python/LightGBM dependency availability on that host.
+- [x] Verify s390x architecture, authorized SSH access, and the running application.
+- [x] Confirm Python, FastAPI, and LightGBM availability on the host.
 - [ ] Add and verify Docker/Podman deployment files.
-- [ ] Deploy frontend, backend, database storage, and model inference to LinuxONE.
+- [x] Deploy frontend, backend, SQLite storage, and LightGBM CPU inference to LinuxONE; health/readiness verified.
 - [ ] Configure a reachable URL, HTTPS, exact allowed origins, and secure cookies.
 - [ ] Verify the single-worker replay/scoring service and persistent storage after a restart.
 - [ ] Let the teammate test the hosted app from another network.
@@ -190,7 +190,7 @@ These software checks do not establish clinical accuracy or LinuxONE deployment 
 - [ ] Demonstrate that hybrid workflow on the deployed LinuxONE host.
 - [ ] Verify any IBM-specific security or hardware-acceleration claim before including it in the pitch.
 
-LinuxONE access is established by the user's report; deployment and acceleration are not established by the server flavor name. Current verified inference runs locally on CPU.
+LinuxONE s390x access and the existing deployment were inspected over SSH. LightGBM runs on CPU; no IBM hardware acceleration is claimed. The server's private configuration and persistent database are kept separate from source updates.
 
 ## 12. Repository, documentation, and submission
 
@@ -224,10 +224,11 @@ This expansion was discussed, but no additional disease or implementation was se
 - [ ] Display each model's availability, evidence, timestamp, and review state separately.
 - [ ] Test combined operation; never join unrelated datasets as though their records describe the same patient.
 
-## 14. Newly proposed enhancements — not implemented
+## 14. Additional enhancements
 
-- [ ] “Since your last review”: highlight new readings, alerts, and completed work since a clinician last checked.
-- [ ] Assign alert review tasks to a clinician with follow-up times and visible ownership.
+- [x] Implement “Since your last review” locally: explicit personal checkpoints, changed vitals, new lab results, alert episodes, care updates, and sepsis-signal changes. Keep unresolved alerts/planned actions visible and guard replay rewinds, stale writes, and clinician isolation.
+- [ ] Deploy the new review-checkpoint and alert-follow-up features to LinuxONE after local review.
+- [x] Add clinician-owned alert review with self-claim/release, patient-hour reassessment scheduling, due/overdue reminders, separate completion, and a persistent response timeline. Guard ownership and stale writes.
 - [ ] Compare successive handovers and highlight newly added information.
 - [ ] Add a compact reliability summary alongside the existing measurement-availability heatmap.
 - [ ] Display actual held-out model evaluation results in a dedicated performance view.

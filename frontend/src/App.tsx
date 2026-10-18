@@ -52,6 +52,7 @@ import {
 } from "./components/PatientGuidance";
 import { SepsisInsights } from "./components/SepsisInsights";
 import { ChatReply } from "./components/ChatReply";
+import { SinceLastReview } from "./components/SinceLastReview";
 import {
   BloodPressureChart,
   MeasurementHeatmap,
@@ -792,6 +793,7 @@ export default function App() {
   const [chatInput, setChatInput] = useState("");
   const [familyInput, setFamilyInput] = useState("");
   const [alertFilter, setAlertFilter] = useState<AlertFilter>("Active");
+  const [alertPatientId, setAlertPatientId] = useState<string | null>(null);
   const [compare, setCompare] = useState(false);
   const [seekHour, setSeekHour] = useState<number | null>(null);
   const seekRef = useRef<number | null>(null);
@@ -809,6 +811,7 @@ export default function App() {
   });
   const availableAlerts = alerts;
   const activeAlerts = alerts.filter((a) => a.status !== "Resolved");
+  const dueFollowups = alerts.filter(a => a.workflow?.overdue || a.workflow?.due_now);
   const sessionEvents = saved.events;
   const visibleRows = patient
     ? history(patient, hour).filter(
@@ -1022,7 +1025,8 @@ export default function App() {
       );
     }
   }
-  function navigate(next: Page) {
+  function navigate(next: Page, alertScope: string | null = null) {
+    setAlertPatientId(next === "alerts" ? alertScope : null);
     setPage(user?.role === "family" ? "family" : next);
     setMenuOpen(false);
     setSearch("");
@@ -1390,7 +1394,7 @@ export default function App() {
   function AlertsList({ compact = false }: { compact?: boolean }) {
     const list = availableAlerts.filter((a) =>
       compact
-        ? a.status !== "Resolved"
+        ? a.status !== "Resolved" || a.workflow?.follow_up === 'scheduled'
         : alertFilter === "All" ||
           (alertFilter === "Active"
             ? a.status !== "Resolved"
@@ -2278,6 +2282,25 @@ export default function App() {
                 );
               })}
             </div>
+            <SinceLastReview
+              key={`${session}:${patient.id}`}
+              patientId={patient.id}
+              session={session}
+              hour={hour}
+              onReviewed={() => { void refresh(); }}
+              onAlerts={() => { setAlertFilter("Active"); navigate("alerts", patient.id); }}
+              onFollowups={() => { setAlertFilter("Follow-up"); navigate("alerts", patient.id); }}
+              onHistory={() => {
+                setPatientTab("History & comparison"); setHistoryView("all");
+                requestAnimationFrame(() => document.querySelector(".history-panel")?.scrollIntoView({block:"start",behavior:"auto"}));
+              }}
+              onLabs={() => {
+                setPatientTab("History & comparison");
+                requestAnimationFrame(() => document.querySelector(".laboratory-history")?.scrollIntoView({block:"start",behavior:"auto"}));
+              }}
+              onTimeline={() => setPatientTab("Care timeline")}
+              onScore={() => document.querySelector(".sepsis-review")?.scrollIntoView({block:"start",behavior:"auto"})}
+            />
             <SepsisInsights
               guidance={
                 <PatientGuidance
@@ -2297,7 +2320,7 @@ export default function App() {
               featureLabel={featureLabel}
               onAlerts={() => {
                 setAlertFilter("Active");
-                navigate("alerts");
+                navigate("alerts", patient.id);
               }}
               onAcknowledge={(id) => {
                 void updateAlert(id, "Acknowledged");
@@ -2388,8 +2411,15 @@ export default function App() {
   function AlertPage() {
     return (
       <AlertCenter
-        alerts={availableAlerts}
+        alerts={alertPatientId ? availableAlerts.filter(a => a.patientId === alertPatientId) : availableAlerts}
         patients={patients}
+        patientScope={alertPatientId}
+        onPatientScope={setAlertPatientId}
+        viewerId={user?.id}
+        maxHour={maxHour}
+        onWorkflow={(alert, operation, dueHour) => {
+          void perform(() => command(`/alerts/${alert.id}/workflow`, {hour, version: alert.workflow?.version || null, operation, ...(dueHour == null ? {} : {due_hour: dueHour})}, 'PATCH'), operation === 'complete' ? 'Follow-up recorded as completed' : 'Alert follow-up updated');
+        }}
         hour={hour}
         busy={busy}
         filter={alertFilter}
@@ -3073,6 +3103,7 @@ export default function App() {
         </header>
         <main ref={mainRef}>
           <div className="workspace-content">
+            {user.role === 'clinician' && page !== 'alerts' && dueFollowups.length > 0 && <div className="ward-followup-reminder" role="status"><Clock size={20}/><div><strong>Ward follow-ups: {dueFollowups.length} due / overdue</strong><span>Across all patients · patient hour {hour}</span></div><button className="button secondary" onClick={() => {setAlertFilter('Follow-up'); navigate('alerts');}}>View follow-ups <ArrowRight size={17}/></button></div>}
             {apiError && (
               <div className="notice error-notice" role="alert">
                 {apiError}

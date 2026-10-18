@@ -16,7 +16,11 @@ npm run build
 
 Vite proxies `/api` to `http://127.0.0.1:8000`. For a production preview, build this frontend and run the backend, which serves the build and API together. Vite's standalone preview command does not provide the backend proxy.
 
+The Alert center supports personal ownership, reassessment scheduling by patient hour, a pending-follow-up filter, due/overdue reminders, and a response timeline. The owner explicitly records completion; acknowledgement and resolution remain separate. A ward reminder links to pending tasks across patients, while patient-page alert links retain that patient's filter. All state is saved through authenticated, version-checked backend operations.
+
 The clinical workspace includes patient search, all six primary vital histories, DBP/EtCO2 and 26 additional measurement fields, missing-data states, shared replay, notes, manual monitoring focus and review priority, model-generated alerts, structured/AI handovers, approved family updates, and PSV import. Care records and imports persist on the server. Editable handover changes must be saved explicitly.
+
+`src/components/SinceLastReview.tsx` shows a clinician's saved checkpoint and subsequent vital, laboratory, alert, score, and care-record changes. **Mark reviewed** saves the current patient/replay cutoff through the authenticated backend; it does not resolve alerts or complete tasks. Outstanding work stays visible. Checkpoints are personal, survive refreshes, and reject stale updates or marking while rewound before the latest review.
 
 `src/components/PatientCharts.tsx` adds the combined systolic/diastolic/MAP chart and interactive measurement-availability heatmap. The heatmap switches between vitals and laboratories, supports selected-cell values and arrow-key navigation, and preserves missing hours. `SepsisInsights.tsx` adds recorded alert-hour markers with links to review status. A light-blue clinician-priority panel uses bold status text and a prominent action button. Chart traces remain static during data refreshes.
 

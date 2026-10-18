@@ -17,8 +17,9 @@ from .database import database, migrate
 from .models import Alert, Assignment, AuthSession, CareEvent, FamilyUpdate, Handover, LoginAttempt, Message, Patient, Reading, Replay, User, identifier, LanguageJob
 from .language import enqueue_alert_guidance, GeminiLanguage, approve_bundled_demo_sources, language_worker, queue_job, job_out, handover_draft_text, references as demo_references
 from .language_routes import register_language_routes
+from .reviews import register_review_routes
 from .providers import DisconnectedLanguage, ExampleLanguage, build_prompt, validate_language_result
-from .schemas import AlertCommand, ApprovedUpdate, Command, FAMILY_COLUMNS, FamilyPatient, FamilyReading, FamilyView, FocusCommand, HandoverEdit, LanguageRequest, Login, PlaybackCommand, PriorityCommand, ProfileEdit, TextCommand, UserOut, HandoverCommand
+from .schemas import AlertCommand, AlertWorkflowCommand, ApprovedUpdate, Command, FAMILY_COLUMNS, FamilyPatient, FamilyReading, FamilyView, FocusCommand, HandoverEdit, LanguageRequest, Login, PlaybackCommand, PriorityCommand, ProfileEdit, TextCommand, UserOut, HandoverCommand
 from .security import COOKIE, clinician, current_user, digest, get_db, public_user, writing_clinician, writing_user
 from .seed import parse_recording, passwords, seed, seed_alerts
 from .services import active_replay, alerts_for, event, event_out, events_for, handover_out, latest_values, max_hour, patient_or_404, patient_out, prediction, prediction_request, replay_out, require_replay, rows_for, structured_handover, tick, update_out, workspace, score_through, integration_status
@@ -103,6 +104,7 @@ def create_app(settings: Settings | None = None):
     app.state.clock_lock = clock_lock
     app.state.settings = settings
     register_language_routes(app, settings)
+    register_review_routes(app)
 
     @app.middleware("http")
     async def browser_boundaries(request: Request, call_next):
@@ -321,6 +323,52 @@ def create_app(settings: Settings | None = None):
             event(db, user, alert["patientId"], replay, "Alert update", f"{alert['title']}: {body.status.lower()}.", {"alert_id": alert_id, "status": body.status})
             db.commit()
         return {**alert, "status": body.status}
+
+    @app.patch(PREFIX + "/alerts/{alert_id}/workflow")
+    def update_alert_workflow(alert_id: str, body: AlertWorkflowCommand, user=Depends(writing_clinician), db=Depends(get_db)):
+        replay = require_replay(db, body.session_id)
+        if replay.hour != body.hour:
+            raise HTTPException(409, "Replay advanced. Refresh before updating follow-up.")
+        alert = next((a for a in alerts_for(db, replay) if a["id"] == alert_id), None)
+        if not alert:
+            raise HTTPException(404, "Alert is not available in the current timeline")
+        future = db.scalar(select(CareEvent.id).where(CareEvent.replay_id == replay.id, CareEvent.patient_id == alert["patientId"], CareEvent.hour > replay.hour, CareEvent.kind == "Alert follow-up", CareEvent.data["alert_id"].as_string() == alert_id).limit(1))
+        if future:
+            raise HTTPException(409, "Return to the latest follow-up hour before editing this alert.")
+        state = alert["workflow"]
+        if state["version"] != body.version:
+            raise HTTPException(409, "Another clinician updated this alert. Refresh and try again.")
+        owner, due, follow_up = state["owner_id"], state["due_hour"], state["follow_up"]
+        if body.operation == "claim":
+            if alert["status"] == "Resolved":
+                raise HTTPException(409, "Reopen the alert before taking ownership.")
+            if owner and owner != user.id:
+                raise HTTPException(409, "This alert already has an owner.")
+            if owner == user.id:
+                return alert
+            owner = user.id
+            message = "Took ownership of alert review."
+        else:
+            if owner != user.id:
+                raise HTTPException(403, "Only the alert owner can update this follow-up.")
+            if body.operation == "release":
+                if follow_up == "scheduled":
+                    raise HTTPException(409, "Complete the scheduled follow-up before releasing ownership.")
+                owner = None
+                message = "Released alert ownership."
+            elif body.operation == "schedule":
+                if body.due_hour is None or body.due_hour <= replay.hour or body.due_hour > max_hour(db):
+                    raise HTTPException(422, "Choose a later patient hour within the recording.")
+                due, follow_up = body.due_hour, "scheduled"
+                message = f"Scheduled reassessment for patient hour {due}."
+            else:
+                if follow_up != "scheduled":
+                    raise HTTPException(409, "No scheduled follow-up remains to complete.")
+                follow_up = "completed"
+                message = f"Recorded follow-up as completed (due at patient hour {due})."
+        event(db, user, alert["patientId"], replay, "Alert follow-up", message, {"alert_id": alert_id, "owner_id": owner, "due_hour": due, "follow_up": follow_up, "operation": body.operation})
+        db.commit()
+        return next(a for a in alerts_for(db, replay, alert["patientId"]) if a["id"] == alert_id)
 
     @app.post(PREFIX + "/patients/{patient_id}/handovers", status_code=201)
     def generate_handover(patient_id: str, body: HandoverCommand, user=Depends(writing_clinician), db=Depends(get_db)):
