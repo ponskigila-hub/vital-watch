@@ -1,5 +1,6 @@
 # Binus & SIM Collab_IBM Z Datathon 2026 Project — VitalWatch
 
+
 VitalWatch is an AI-assisted clinical review prototype for ICU and emergency-care workflows. It analyzes replayed hourly vital-sign and laboratory measurements, identifies patients whose LightGBM research score crosses a review threshold, and helps clinicians prioritize assessment while retaining human control over acknowledgement, follow-up, handover, and family communication.
 
 VitalWatch does **not** diagnose sepsis, produce calibrated patient probabilities, recommend treatment, or replace a clinician. Its score is an uncalibrated research output that requires clinical review.
@@ -13,9 +14,13 @@ Subtle changes in a patient's vital signs can be difficult to recognize when car
 VitalWatch is an **AI for Good** healthcare project. It is designed for:
 
 - ICU and emergency clinicians who need to prioritize patient review;
+
 - nurses who verify concerning readings and document follow-up;
+
 - hospital IT teams who need visibility into service health and inference latency;
+
 - healthcare researchers who need to inspect data availability, held-out performance, false alerts, and limitations;
+
 - patients and families who should receive only approved, plain-language updates.
 
 The intended benefit is earlier and more organized review of concerning trends, not autonomous clinical decision-making. VitalWatch keeps alerts, evidence, missing measurements, handovers, and clinician actions distinct so that users can inspect what the system knows and what it does not know.
@@ -46,18 +51,31 @@ The model is only one part of the system. The workflow around it makes the resul
 ## Key features
 
 - Ward overview with patient search, model-band filters, current readings, and trend summaries.
+
 - Causal shared replay of recorded hourly patient data.
+
 - LightGBM v1 CPU inference with saved per-hour scores and threshold-crossing alerts.
+
 - Alert centre with acknowledgement, ownership, follow-up scheduling, and resolution history.
+
 - In-app threshold notification popup for newly detected alerts.
+
 - Patient ranking that prioritizes open unresolved alerts and then acknowledged unresolved alerts.
+
 - Interactive vital and laboratory measurement-availability heatmap.
+
 - Compact reliability summary showing coverage, recorded cells, missing cells, and latest recorded hour.
+
 - Dedicated Performance view with validation, held-out test, and Dataset B check results.
+
 - Successive handover comparison that highlights newly added lines between revisions.
+
 - Restricted family view with clinician-approved updates only.
+
 - Accessibility controls including text-size selection, keyboard navigation, visible focus states, and reduced-motion support.
+
 - `/api/health`, `/api/ready`, and `/api/metrics` operational endpoints.
+
 - Docker/Podman deployment files for a reproducible LinuxONE deployment.
 
 ## Model evidence
@@ -65,7 +83,7 @@ The model is only one part of the system. The workflow around it makes the resul
 The checked-in evaluation artifact reports the following research results:
 
 | Split | AUROC | AUPRC | Detected by onset at 5% policy | Non-sepsis patients alerted |
-| --- | ---: | ---: | ---: | ---: |
+| --- | --- | --- | --- | --- |
 | Validation | 0.818 | 0.133 | 45.5% | 5.0% |
 | Held-out test | 0.822 | 0.135 | 46.1% | 4.9% |
 | Dataset B check | 0.799 | 0.076 | 34.4% | 2.3% |
@@ -81,17 +99,22 @@ VitalWatch is designed to run as a containerized FastAPI service with the React 
 The repository includes:
 
 - `Dockerfile` — multi-stage frontend build and Python runtime image;
+
 - `compose.yml` — Docker Compose / Podman Compose service definition;
+
 - `.dockerignore` — excludes credentials, databases, build output, and local environments;
+
 - `/api/health` — basic service response;
+
 - `/api/ready` — database readiness check;
+
 - `/api/metrics` — process uptime, request count, latest request latency, inference latency, database state, and prediction-provider status.
 
 ### LinuxONE evidence placeholder
 
 Add screenshots or exported terminal captures to the repository before submission. Suggested locations:
 
-```text
+```
 docs/evidence/linuxone-container.png
 docs/evidence/linuxone-health.png
 docs/evidence/linuxone-ready.png
@@ -102,7 +125,7 @@ docs/evidence/linuxone-model.png
 
 After adding the evidence files, replace the placeholders below with the actual images:
 
-```md
+```
 ![VitalWatch container running on LinuxONE](docs/evidence/linuxone-container.png)
 ![VitalWatch health response on LinuxONE](docs/evidence/linuxone-health.png)
 ![VitalWatch metrics response on LinuxONE](docs/evidence/linuxone-metrics.png)
@@ -139,23 +162,128 @@ curl -I "$VITALWATCH_URL/api/docs"
 
 For the final video, show the terminal, the running container, the model-loaded state, the dashboard URL, and one alert threshold crossing. The `/api/metrics` output should be captured after the application has processed representative requests so that request and inference latency fields are populated.
 
+## Final submission guide
+
+Use this section to finish the public README and submission package. The current live demo can be linked with a readable label without changing the IP address:
+
+```
+[Open VitalWatch live demo on IBM LinuxONE](http://148.100.108.67:8000/ )
+```
+
+Run these commands on the LinuxONE VM after the application has processed representative requests:
+
+```bash
+cd ~/vital-watch
+mkdir -p docs/evidence
+export VITALWATCH_URL="http://148.100.108.67:8000"
+curl -sS "$VITALWATCH_URL/api/health" | tee docs/evidence/api-health.json
+curl -sS "$VITALWATCH_URL/api/ready" | tee docs/evidence/api-ready.json
+curl -sS "$VITALWATCH_URL/api/metrics" | tee docs/evidence/api-metrics.json
+tmux ls | tee docs/evidence/linuxone-tmux.txt
+tail -80 ~/vitalwatch.log | tee docs/evidence/linuxone-log.txt
+podman ps --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}' | tee docs/evidence/linuxone-containers.txt
+podman logs --tail 120 vitalwatch | tee docs/evidence/linuxone-container.log
+```
+
+If Docker is used instead of Podman, replace `podman` with `docker`. Add screenshots under `docs/evidence/` for the running container, health/readiness responses, metrics response, model status, and dashboard. Do not commit passwords, API keys, cookies, `.demo-credentials.json`, database files, or unredacted private configuration.
+
+Before submitting, replace `[TEAM NAME]`, complete the team-contribution table, add the final video URL, add the LinuxONE evidence images, and replace the project license placeholder. A suggested link block is:
+
+```
+## Submission links
+
+- GitHub: https://github.com/ponskigila-hub/vital-watch
+- Live demo: http://148.100.108.67:8000/
+- Demo video: <PASTE-YOUR-MAX-3-MINUTE-VIDEO-LINK>
+- Architecture flowchart: [docs/architecture.mmd](docs/architecture.mmd )
+```
+
+The three-minute video should show, in order: the problem and PhysioNet data; the flowchart; LinuxONE terminal and running service; dashboard; one threshold-crossing notification; patient prioritization; reliability summary; handover comparison; and the Performance page. Close by stating that LightGBM provides an uncalibrated research score for clinician review and that VitalWatch does not diagnose sepsis or replace clinical judgment.
+
+Final pre-submission checks:
+
+```bash
+git status --short
+git diff --check
+grep -n '\[TEAM NAME\]\|<PASTE-YOUR' README.md
+```
+
+The public demo credentials in this README are for a fresh demo installation. A LinuxONE database reset with different values will use the credentials currently configured in that host's private `api/.env`.
+
 ## Technology stack
 
 - **Frontend:** React, TypeScript, Vite, Recharts, React Feather.
+
 - **Backend:** Python, FastAPI, SQLAlchemy, SQLite, Uvicorn.
+
 - **Predictive AI:** LightGBM v1 with shared 127-feature preprocessing and a stored logistic-regression comparison baseline.
+
 - **Deployment:** Docker or Podman, Compose-compatible service definition, IBM LinuxONE target environment.
+
 - **Data quality:** replay cutoff enforcement, missingness preservation, measurement availability heatmap, and reliability summary.
 
-This submission intentionally presents LightGBM as the implemented AI model. A generative-AI provider interface exists in the codebase as optional infrastructure, but it is not required for monitoring and is not presented here as a live part of the core submission workflow.
+This submission presents LightGBM as the implemented predictive AI model. An optional Gemini language provider is also available for evidence-grounded summaries, clinician chat, and editable handover drafts. Gemini is not required for monitoring, scoring, alert generation, or the core submission workflow. Only describe Gemini as live in the final pitch after it has been tested successfully on the LinuxONE deployment with synthetic demo data.
+
+## Optional language service
+
+The language service is disabled by default in the repository template. To enable it for a controlled demo, configure the following values on the LinuxONE host in the private `api/.env` file:
+
+```
+LANGUAGE_PROVIDER=gemini
+GEMINI_API_KEY=<private-key-not-committed-to-git>
+GEMINI_MODEL=gemini-3.5-flash-lite
+GEMINI_FALLBACK_MODELS=gemini-3.1-flash-lite
+```
+
+Restart the backend after changing the provider because the configuration is loaded at application startup:
+
+```bash
+cd ~/vital-watch
+tmux kill-session -t vitalwatch 2>/dev/null || true
+pkill -f '[u]vicorn api.app.main' 2>/dev/null || true
+sleep 2
+tmux new -d -s vitalwatch 'cd ~/vital-watch && .venv/bin/python -m uvicorn api.app.main:app --host 0.0.0.0 --port 8000 2>&1 | tee ~/vitalwatch.log'
+sleep 5
+```
+
+Verify the setting without printing the API key:
+
+```bash
+awk -F= '
+/^LANGUAGE_PROVIDER=/ { print $0 }
+/^GEMINI_API_KEY=/ { print $1 "=" (length($2) > 0 ? "<configured>" : "<empty>") }
+/^GEMINI_MODEL=/ { print $0 }
+' api/.env
+```
+
+Use only synthetic demo records for a language-service smoke test. A suitable test prompt is:
+
+```
+Summarize the recorded vital-sign changes for this patient and identify which measurements should be reviewed by the clinician.
+```
+
+The language response is an optional generated summary. Clinicians must review the original measurements and supporting evidence directly. Do not send real patient data, API keys, passwords, cookies, or private configuration to the provider. If the provider is unavailable, the core LightGBM monitoring workflow continues and the interface should state that no AI language answer was generated.
+
+If Gemini is successfully verified on LinuxONE, add a redacted screenshot to `docs/evidence/gemini-status.png` and document the verification date here:
+
+```
+Gemini LinuxONE smoke test: <DATE, MODEL, SYNTHETIC-DATA-ONLY RESULT>
+```
+
+If the smoke test is not successful, keep the language service documented as optional and do not include it in the core video claim.
 
 ## Dataset and references
 
 - [PhysioNet Challenge 2019 training dataset](https://physionet.org/content/challenge-2019/1.0.0/training/)
+
 - [PhysioNet / Computing in Cardiology Challenge 2019](https://physionet.org/content/challenge-2019/1.0.0/)
+
 - [Challenge paper](https://pmc.ncbi.nlm.nih.gov/articles/PMC6964870/)
+
 - [VitalWatch GitHub repository](https://github.com/ponskigila-hub/vital-watch)
+
 - [IBM Hack2Skill Datathon 2026 submission page](https://hack2skill.com/event/datathon-2026)
+
 - [Datathon submission guidance video](https://youtu.be/3_L3T__zEco?si=Q-ckiVTP6ByvgZEv)
 
 Open-source libraries are used under their respective licenses. Review the dependency manifests and license notices before submission.
@@ -165,7 +293,9 @@ Open-source libraries are used under their respective licenses. Review the depen
 ### Prerequisites
 
 - Python 3.12 or newer;
+
 - Node.js 20 or newer;
+
 - Git.
 
 ### Backend
@@ -212,6 +342,17 @@ podman compose up --build
 
 Open `http://127.0.0.1:8000/` and verify `/api/health` and `/api/ready`.
 
+## Public demo credentials
+
+These credentials are intentionally published for the hackathon demo video only. They are not secrets and must never be used with real patient data, production infrastructure, or a reused database. Change or remove them after submission.
+
+| Role | Email | Demo password |
+| --- | --- | --- |
+| Clinician | `clinician@vitalwatch.local` | `VWClinician-qpwDtOUyJ3M5L57gqE!` |
+| Family | `family@vitalwatch.local` | `VWFamily-nnwoLOKkCXjmloY2qA!` |
+
+For a safer deployment, remove these values from the public README and use locally generated credentials from `api/.demo-credentials.json` instead.
+
 ## Demo accounts and safety
 
 Initialization creates local demo credentials in `api/.demo-credentials.json`. This file is private, generated per installation, excluded from Git, and must never be uploaded. The system uses fictional display identities and replayed records for demonstration.
@@ -223,8 +364,11 @@ VitalWatch is not a medical device and has not undergone independent clinical va
 The current local verification results are:
 
 - 69 backend tests passed;
+
 - 9 frontend tests passed;
+
 - TypeScript and production frontend build passed;
+
 - repository whitespace check passed.
 
 The final submission should add the LinuxONE host evidence and repeat the health, readiness, and metrics checks on the deployed instance.
@@ -235,10 +379,10 @@ Replace this table before submission:
 
 | Team member | Contribution |
 | --- | --- |
-| `Nicholas Driyadis Tjoe` | Model training, feature engineering, and evaluation |
-| `Rivaldo Caga Prawira Tjong` | Backend, deployment, and LinuxONE integration |
-| `Gerald Amadeo Passover Sutanto` | Frontend, UX, accessibility, and demo workflow |
-| `Christian Caesar` | Research, documentation, testing, and submission |
+| `<Name>` | Model training, feature engineering, and evaluation |
+| `<Name>` | Backend, deployment, and LinuxONE integration |
+| `<Name>` | Frontend, UX, accessibility, and demo workflow |
+| `<Name>` | Research, documentation, testing, and submission |
 
 ## License
 
