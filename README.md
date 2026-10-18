@@ -235,10 +235,10 @@ Replace this table before submission:
 
 | Team member | Contribution |
 | --- | --- |
-| `<Name>` | Model training, feature engineering, and evaluation |
-| `<Name>` | Backend, deployment, and LinuxONE integration |
-| `<Name>` | Frontend, UX, accessibility, and demo workflow |
-| `<Name>` | Research, documentation, testing, and submission |
+| `Nicholas Driyadis Tjoe` | Model training, feature engineering, and evaluation |
+| `Rivaldo Caga Prawira Tjong` | Backend, deployment, and LinuxONE integration |
+| `Gerald Amadeo Passover Sutanto` | Frontend, UX, accessibility, and demo workflow |
+| `Christian Caesar` | Research, documentation, testing, and submission |
 
 ## License
 
