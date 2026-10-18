@@ -780,6 +780,8 @@ export default function App() {
   const [sheet, setSheet] = useState<Sheet>(null);
   const [toast, setToast] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [fontScale, setFontScale] = useState("medium");
   const [chartVital, setChartVital] = useState<VitalKey>("HR");
   const [historyHours, setHistoryHours] = useState("24");
   const [historyView, setHistoryView] = useState<"all" | "focused">("all");
@@ -803,7 +805,27 @@ export default function App() {
   const refreshSequence = useRef(0);
   const busyRef = useRef(false);
   const replayRef = useRef({ id: "", revision: 1 });
+  const seenAlertIds = useRef<Set<string>>(new Set());
+  const alertSnapshotReady = useRef(false);
   const patient = patients.find((p) => p.id === selectedId) || patients[0];
+  useEffect(() => {
+    const savedScale = window.localStorage.getItem("vitalwatch-font-scale");
+    if (savedScale && ["small", "medium", "large", "xlarge"].includes(savedScale)) {
+      setFontScale(savedScale);
+    }
+    const onShortcut = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "b") {
+        event.preventDefault();
+        setSidebarCollapsed((value) => !value);
+      }
+    };
+    window.addEventListener("keydown", onShortcut);
+    return () => window.removeEventListener("keydown", onShortcut);
+  }, []);
+  function changeFontScale(value: string) {
+    setFontScale(value);
+    window.localStorage.setItem("vitalwatch-font-scale", value);
+  }
   const focusOf = (p: Patient) => saved.focuses[p.id] || p.focus;
   const alertState = (id: string): AlertState => ({
     status: alerts.find((a) => a.id === id)?.status || "Open",
@@ -956,6 +978,25 @@ export default function App() {
     const id = setTimeout(() => setToast(""), 6000);
     return () => clearTimeout(id);
   }, [toast]);
+  useEffect(() => {
+    if (!user || user.role !== "clinician") {
+      seenAlertIds.current.clear();
+      alertSnapshotReady.current = false;
+      return;
+    }
+    const currentIds = new Set(activeAlerts.map((alert) => alert.id));
+    if (!alertSnapshotReady.current) {
+      seenAlertIds.current = currentIds;
+      alertSnapshotReady.current = true;
+      return;
+    }
+    const freshAlert = activeAlerts.find((alert) => !seenAlertIds.current.has(alert.id));
+    seenAlertIds.current = currentIds;
+    if (freshAlert) {
+      const name = patients.find((item) => item.id === freshAlert.patientId)?.name || freshAlert.patientId;
+      setToast(`Threshold crossed: ${name} needs clinical review at patient hour ${freshAlert.hour}.`);
+    }
+  }, [activeAlerts, patients, user?.id, user?.role]);
   useEffect(() => {
     const motion = gsap.matchMedia();
     motion.add("(prefers-reduced-motion: no-preference)", () => {
@@ -2960,7 +3001,7 @@ export default function App() {
         )[page];
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${sidebarCollapsed ? "sidebar-collapsed" : ""} font-${fontScale}`}>
       {user.role === "clinician" && (
         <input
           type="file"
@@ -3054,6 +3095,13 @@ export default function App() {
         <header className="topbar">
           <div className="breadcrumb">
             <IconButton
+              className="desktop-sidebar-toggle"
+              label={sidebarCollapsed ? "Expand navigation" : "Collapse navigation"}
+              onClick={() => setSidebarCollapsed((value) => !value)}
+            >
+              <Menu size={20} />
+            </IconButton>
+            <IconButton
               className="mobile-menu"
               label="Open navigation"
               onClick={() => setMenuOpen((v) => !v)}
@@ -3065,6 +3113,19 @@ export default function App() {
             <strong>{pageName}</strong>
           </div>
           <div className="topbar-right">
+            <label className="font-scale-control">
+              <span>Text size</span>
+              <select
+                aria-label="Text size"
+                value={fontScale}
+                onChange={(event) => changeFontScale(event.target.value)}
+              >
+                <option value="small">Small</option>
+                <option value="medium">Medium</option>
+                <option value="large">Large</option>
+                <option value="xlarge">Extra large</option>
+              </select>
+            </label>
             {user.role === "clinician" && (
               <IconButton
                 label="Open alerts"
@@ -3134,18 +3195,6 @@ export default function App() {
             ) : (
               SettingsPage()
             )}
-            <footer className="workspace-footer">
-              <span>
-                <Activity size={13} /> Hourly replay
-              </span>
-              <span>
-                {user.role === "family"
-                  ? "Approved care updates"
-                  : modelConnected
-                    ? "Sepsis model connected"
-                    : "Scoring unavailable"}
-              </span>
-            </footer>
           </div>
         </main>
         {user.role === "clinician" ? (
@@ -3236,26 +3285,6 @@ export default function App() {
                 <RotateCcw size={15} />
               </IconButton>
             </div>
-            <button
-              className="replay-mode"
-              onClick={() => navigate("settings")}
-            >
-              <span
-                className={
-                  modelConnected
-                    ? "live-dot"
-                    : exampleMode
-                      ? "example-dot"
-                      : "connection-dot"
-                }
-              />
-              {modelConnected
-                ? "Sepsis model connected"
-                : exampleMode
-                  ? "Example insights on"
-                  : "Scoring unavailable"}
-              <Settings size={13} />
-            </button>
           </div>
         ) : (
           <div className="replay-bar family-status-bar">
@@ -3266,7 +3295,7 @@ export default function App() {
         )}
       </div>
       {toast && (
-        <div className="toast" role="status">
+        <div className="toast" role="alert" aria-live="assertive">
           <span>
             <Check size={16} />
           </span>
