@@ -40,6 +40,8 @@
 .arc-patient>button:hover>svg { translate: 4px 0; }
 .toast { animation: toast-enter var(--motion-normal) var(--motion-ease) both; }
 .sheet-overlay { animation: overlay-enter var(--motion-normal) ease both; }
+.sheet-overlay.is-closing { animation: overlay-exit 220ms ease both; }
+.sheet-overlay.is-closing>.sheet { animation: sheet-exit 220ms cubic-bezier(.4,0,.8,.4) both; pointer-events:none; }
 .sr-details[open]>.sr-details-body,.arc-details[open]>div,.raw-history[open]>div {
   animation: detail-enter var(--motion-normal) var(--motion-ease) both;
 }
@@ -48,6 +50,8 @@
   to { opacity: 1; translate: 0 0; }
 }
 @keyframes overlay-enter { from { opacity: 0; } to { opacity: 1; } }
+@keyframes overlay-exit { from { opacity: 1; } to { opacity: 0; } }
+@keyframes sheet-exit { from { translate:0 0; } to { translate:48px 0; } }
 @keyframes detail-enter {
   from { opacity: .25; translate: 0 8px; }
   to { opacity: 1; translate: 0 0; }

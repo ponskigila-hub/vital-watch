@@ -217,6 +217,8 @@ Clinical notes, diagnoses, medications, labs, scores, ranking, alerts, and inter
 
 Open **Ask VitalWatch** on an approved demo patient. With Gemini configured, confirm your question contains fictional/demo content only, then send it. The backend queues a response from the patient snapshot; the conversation displays supporting evidence and the patient hour. Without configuration, it returns an explicit disconnected response. No real personal data should be entered.
 
+Replies support short bullets, numbered steps, headings, and bold readings/statuses. Internal evidence tags stay out of the prose. **Sources** shows readable evidence labels, values, and observation times. **View chart** offers trends from repeated, referenced readings or score history in that reply's saved snapshot; missing values remain gaps and later replay data is excluded. It does not plot invented model-generated values.
+
 ## Import patient recordings
 
 Choose **Import patient** or **Import PSV** while signed in as a clinician. Each upload creates one persistent patient record with a generated identity; the file is treated as a recording, not a source of real patient identity.
@@ -446,7 +448,7 @@ npm test --prefix frontend
 
 The backend suite currently contains **58 tests** covering authentication, CSRF/origin checks, family restrictions, replay cutoffs, imports, care persistence, handover conflicts/export, real artifact scoring, training/serving parity, SHAP output, background scoring, migrations, alert deduplication, and language integration. Gemini tests use mocked responses and cover evidence/citation rejection, consent boundaries, durable jobs, deduplication, timeout/quota handling, model fallback, and planned-versus-completed actions. Tests do not use the private live API key.
 
-The frontend build checks TypeScript and produces the compiled application. Six frontend calculation tests verify score changes, missing hours, cutoff handling, persistent review status, and measurement comparisons.
+The frontend build checks TypeScript and produces the compiled application. Nine frontend tests verify score changes, missing hours, cutoff handling, persistent review status, measurement comparisons, chat formatting, and evidence-bound chart data.
 
 Local browser checks include the clinician note → handover → approved family update flow, combined blood-pressure chart, vital/lab heatmap selection and keyboard navigation, an alert marker at the recorded hour, and priority-panel contrast. Live Gemini smoke testing is an explicit separate command. Passing these checks does not establish clinical validity or production readiness.
 

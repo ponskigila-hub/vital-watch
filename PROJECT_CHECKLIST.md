@@ -129,6 +129,10 @@ The trainer's test report contains AUROC 0.8223 and AUPRC 0.1349. These are repo
 - [x] Implement evidence-linked guidance/chat and clinician-tracked suggested steps; validated with a live synthetic smoke test.
 - [ ] Verify citation support and unsupported-claim behavior beyond the existing structural checks.
 - [x] Test cutoffs, explicit demo-text confirmation, citation/evidence rejection and clinician action boundaries with mocked responses.
+- [x] Render chat headings, bullets, numbered steps, and bold statistics safely; remove internal evidence tags from displayed prose.
+- [x] Offer readable chat sources and optional charts derived from the reply's saved, cutoff-bound evidence, preserving missing values.
+- [x] Animate shared sidebar dismissal by close button, Escape, and backdrop click, with immediate dismissal for reduced-motion preferences.
+- [x] Remove the standalone Reading provenance card and give the clinical profile the available width; keep source metadata in evidence and patient labels.
 
 Gemini is off by default. Set LANGUAGE_PROVIDER=gemini and the backend GEMINI_API_KEY, then restart. A live synthetic smoke test passed on 2026-10-17 using Gemini 3.5 Flash-Lite. Quota remains project-dependent. Gemini 3.1 Flash-Lite is an explicitly configured backup for eligible model failures. Developer-selected demo references are supplied; they are not clinically reviewed.
 
@@ -158,7 +162,7 @@ Gemini is off by default. Set LANGUAGE_PROVIDER=gemini and the backend GEMINI_AP
 - [x] Provide API health/readiness routes and interactive API documentation.
 - [x] Provide a CLI to initialize the database and assign patients to a family account.
 - [x] Pass all 58 backend tests covering permissions, replay, imports, care persistence, inference, alerts, Gemini jobs, grounding, fallback, and handover handling.
-- [x] Pass six frontend calculation tests for score history, comparisons, and persistent review status.
+- [x] Pass nine frontend tests for score history, comparisons, persistent review status, chat formatting, and evidence-bound charts.
 - [x] Successfully build the frontend with the new patient charts and priority styling.
 - [x] Manually check local clinician, handover, family, and sepsis-insight flows in the browser.
 - [x] Verify heatmap recorded/missing cells, laboratory switching, arrow-key navigation, and a sepsis alert marker at hour 64; restore replay to its original hour afterward.

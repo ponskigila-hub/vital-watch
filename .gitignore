@@ -16,6 +16,7 @@ models/*.pkl
 models/*.joblib
 
 # Secrets
+/cagapublic.pem
 .env
 .env.*
 !.env.example

@@ -1,0 +1,29 @@
+.chat-rich-text { color:#1e293b; font-size:var(--font-body); line-height:1.75; overflow-wrap:anywhere; }
+.chat-rich-text p { margin:0 0 12px; white-space:normal; }
+.chat-rich-text p:last-child { margin-bottom:0; }
+.chat-rich-text strong { font-weight:700; color:#0f172a; }
+.chat-rich-text h4 { font-size:var(--font-body); font-weight:700; color:#005280; margin:20px 0 8px; }
+.chat-rich-text h4:first-child { margin-top:0; }
+.chat-rich-text ul,.chat-rich-text ol { margin:8px 0 16px; padding-left:23px; list-style-position:outside; }
+.chat-rich-text ul { list-style-type:disc; }
+.chat-rich-text ol { list-style-type:decimal; }
+.chat-rich-text li { margin:7px 0; padding-left:3px; }
+.chat-rich-text li::marker { color:#0077b6; font-weight:600; }
+.chat-reply-tools { display:flex; flex-wrap:wrap; gap:20px; border-top:1px solid #dce5ef; padding-top:12px; margin-top:16px; }
+.chat-reply-tools .text-link { font-size:var(--font-caption); }
+.chat-readable-sources,.chat-chart-panel { margin-top:14px; border:1px solid #dce5ef; background:white; border-radius:var(--radius-inset); padding:16px; }
+.chat-readable-sources>strong,.chat-chart-title strong { font-size:var(--font-body); color:#0f172a; font-weight:700; }
+.chat-readable-sources ul { list-style:disc; padding-left:20px; margin:10px 0; }
+.chat-readable-sources li { font-size:var(--font-caption); line-height:1.6; margin:8px 0; color:#334155; }
+.chat-readable-sources small,.chat-chart-panel>small,.chat-snapshot-chart>small { display:block; font-size:var(--font-caption); line-height:1.6; color:#475569; }
+.chat-readable-sources a { color:#005280; text-decoration:underline; }
+.chat-chart-panel>label { display:flex; align-items:center; justify-content:space-between; gap:12px; font-size:var(--font-caption); margin-bottom:16px; flex-wrap:wrap; }
+.chat-chart-panel select { max-width:100%; }
+.chat-chart-title { display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
+.chat-chart-title span { font-size:var(--font-caption); color:#475569; }
+.chat-chart-plot { width:100%; min-width:0; height:200px; }
+.chat-composer>textarea { min-height:72px; }
+.chat-composer .demo-confirm { line-height:1.5; margin:10px 0; }
+.chat-layout { overflow:hidden; }
+.chat-messages { min-height:0; }
+.chat-composer { flex-shrink:0; }
