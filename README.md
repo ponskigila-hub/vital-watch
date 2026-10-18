@@ -1,6 +1,4 @@
-# [TEAM NAME]_IBM Z Datathon 2026 Project — VitalWatch
-
-> Replace `[TEAM NAME]` with the official team name before submitting.
+# Binus & SIM Collab_IBM Z Datathon 2026 Project — VitalWatch
 
 VitalWatch is an AI-assisted clinical review prototype for ICU and emergency-care workflows. It analyzes replayed hourly vital-sign and laboratory measurements, identifies patients whose LightGBM research score crosses a review threshold, and helps clinicians prioritize assessment while retaining human control over acknowledgement, follow-up, handover, and family communication.
 
