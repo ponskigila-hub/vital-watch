@@ -73,6 +73,13 @@ The trainer's test report contains AUROC 0.8223 and AUPRC 0.1349. These are repo
 - [x] Make sparse lab results more visible with larger darker points and a reading guide.
 - [x] Increase typography size and emphasize important readings/statuses with stronger contrast.
 - [x] Apply the supplied MediCare+ design guide: blue/white palette, bundled Figtree/Open Sans/IBM Plex Mono, touch targets, focus indicators, and consistent component styling.
+- [x] Integrate a liquid-glass dashboard theme directly into the React frontend while preserving the original clinical palette: medical blue, cyan, navy, white, and slate.
+- [x] Keep the workspace footer and replay control aligned with the main content area at every sidebar state and breakpoint.
+- [x] Add an integrated desktop sidebar collapse control with `Ctrl+B` / `Cmd+B` keyboard support and a clean responsive off-canvas fallback.
+- [x] Add an integrated Small / Medium / Large / Extra Large text-size selector with local persistence.
+- [x] Remove redundant bottom status copy and keep replay controls visually separated from the workspace content.
+- [x] Add an assertive notification popup when a newly saved model alert crosses the review threshold.
+- [x] Improve collapsed-sidebar animation, notification-count positioning, overview icon size/contrast, and consistent Figtree/Open Sans typography.
 - [x] Replace Lucide UI icons with Feather icons across navigation, patient workflows, sepsis review, and the alert center.
 - [x] Standardize font sizes across screens and apply softer shadows/rounded corners from the visual reference while preserving the existing layout.
 - [x] Shorten dashboard and patient-view copy, remove promotional filler, and keep statistics, timing, source labels, and clinical caveats explicit.
@@ -151,7 +158,7 @@ Gemini is off by default. Set LANGUAGE_PROVIDER=gemini and the backend GEMINI_AP
 - [x] Share only the implemented family fields: identity/source, three vital histories, and approved updates.
 - [x] Exclude internal rankings, model scores, alerts, labs, notes, and handovers from family responses.
 - [x] Provide a clinician preview of that restricted view.
-- [ ] Verify remote access for family and remote clinical staff after hosted deployment.
+- [x] Verify remote access for family and remote clinical staff after hosted deployment — user reports the LinuxONE link is reachable by the owner and teammate.
 
 ## 10. Backend, accounts, and verification
 
@@ -166,7 +173,7 @@ Gemini is off by default. Set LANGUAGE_PROVIDER=gemini and the backend GEMINI_AP
 - [x] Successfully build the frontend with the new patient charts and priority styling.
 - [x] Manually check local clinician, handover, family, and sepsis-insight flows in the browser.
 - [x] Verify heatmap recorded/missing cells, laboratory switching, arrow-key navigation, and a sepsis alert marker at hour 64; restore replay to its original hour afterward.
-- [ ] Run a final end-to-end verification on the deployed IBM host.
+- [ ] Run a final end-to-end verification on the deployed IBM host — basic access is confirmed; full alert-to-family workflow evidence is still recommended.
 - [ ] Add account invitation/administration and password-reset workflows — future work; public signup is not required for the current hospital demo.
 - [ ] Validate multi-instance operation — current replay design requires one backend worker/instance.
 - [ ] Add production backup/recovery and broader operational/clinical validation — future work.
