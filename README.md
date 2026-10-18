@@ -6,6 +6,8 @@ The app includes a React frontend, an authenticated FastAPI backend, and a persi
 
 **Verified locally on 18 October 2026:** 69 backend tests, nine frontend tests, and the production build passed. Live Gemini generation has also been checked with approved demo evidence. See the [complete project checklist](PROJECT_CHECKLIST.md).
 
+**Deployed on LinuxONE on 18 October 2026:** personal review briefings, patient-scoped alert navigation, clinician-owned follow-up, and the clearer overdue reminder layout. All 11 review/follow-up tests also passed on the host. Deployment checks passed for health/readiness, clinician sign-in, review/workflow endpoints, and served frontend assets. The existing private configuration and database records were preserved. LightGBM is connected and Gemini remains configured; deployment checks did not make a new paid or live Gemini request.
+
 ## Contents
 
 - [Project progress checklist](PROJECT_CHECKLIST.md)
@@ -501,4 +503,4 @@ Run **one backend worker / one application instance** for the current shared-clo
 
 Further work includes containerized deployment, a trained personal-baseline detector, a reviewed medical reference library, live sensor ingestion, production account administration, and broader operational/clinical validation. Application code licensing is not specified by the upstream dataset notices; dataset attribution is retained separately.
 
-The **Since your last review** summary and clinician-owned alert follow-up are implemented locally. Handover change comparison, a dedicated model-performance view, and a LinuxONE operations panel remain ideas. See [PROJECT_CHECKLIST.md](PROJECT_CHECKLIST.md) for the full completed/pending breakdown and submission tasks.
+The **Since your last review** summary and clinician-owned alert follow-up are implemented and deployed on LinuxONE. The compact overdue reminder separates status, elapsed patient hours, due hour, and owner for easier scanning. Handover change comparison, a dedicated model-performance view, and a LinuxONE operations panel remain ideas. See [PROJECT_CHECKLIST.md](PROJECT_CHECKLIST.md) for the full completed/pending breakdown and submission tasks.

@@ -182,7 +182,7 @@ These software checks do not establish clinical accuracy or LinuxONE deployment 
 - [ ] Add and verify Docker/Podman deployment files.
 - [x] Deploy frontend, backend, SQLite storage, and LightGBM CPU inference to LinuxONE; health/readiness verified.
 - [ ] Configure a reachable URL, HTTPS, exact allowed origins, and secure cookies.
-- [ ] Verify the single-worker replay/scoring service and persistent storage after a restart.
+- [x] Verify the existing single-process app restarts successfully, preserves private configuration and database records, serves the updated frontend, and exposes the new review/workflow routes.
 - [ ] Let the teammate test the hosted app from another network.
 - [ ] Capture live workload and interactive app evidence on LinuxONE for the submission.
 - [ ] Demonstrate the recommended two AI frameworks in the target environment. LightGBM and a scikit-learn training baseline exist in source; a second running LinuxONE AI workload has not been verified.
@@ -227,7 +227,8 @@ This expansion was discussed, but no additional disease or implementation was se
 ## 14. Additional enhancements
 
 - [x] Implement “Since your last review” locally: explicit personal checkpoints, changed vitals, new lab results, alert episodes, care updates, and sepsis-signal changes. Keep unresolved alerts/planned actions visible and guard replay rewinds, stale writes, and clinician isolation.
-- [ ] Deploy the new review-checkpoint and alert-follow-up features to LinuxONE after local review.
+- [x] Deploy review checkpoints, patient-scoped alert navigation, alert ownership/follow-up, and the revised compact overdue layout to LinuxONE; health, sign-in, API availability, served assets, configuration, and database preservation checked.
+- [x] Pass all 11 review-checkpoint and alert-follow-up tests on LinuxONE/s390x using isolated test databases.
 - [x] Add clinician-owned alert review with self-claim/release, patient-hour reassessment scheduling, due/overdue reminders, separate completion, and a persistent response timeline. Guard ownership and stale writes.
 - [ ] Compare successive handovers and highlight newly added information.
 - [ ] Add a compact reliability summary alongside the existing measurement-availability heatmap.
